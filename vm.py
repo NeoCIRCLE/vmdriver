@@ -42,6 +42,7 @@ class VMDisk:
     driver_name = None
     driver_type = None
     driver_cache = None
+    target_device = None
 
     def __init__(self,
                  name,
@@ -50,7 +51,8 @@ class VMDisk:
                  disk_device="disk",
                  driver_name="qemu",
                  driver_type="qcow2",
-                 driver_cache="normal"):
+                 driver_cache="normal",
+                 target_device="dev/vda"):
         self.name = name
         self.source = source
         self.disk_type = disk_type
@@ -58,6 +60,7 @@ class VMDisk:
         self.driver_name = driver_name
         self.driver_type = driver_type
         self.driver_cache = driver_cache
+        self.target_device = target_device
 
     def dump_xml(self):
         xml_top = ET.Element('disk',
@@ -65,10 +68,17 @@ class VMDisk:
                                      'device': self.disk_device})
         ET.SubElement(xml_top, 'source',
                       attrib={self.disk_type: self.source})
+        ET.SubElement(xml_top, 'target',
+                      attrib={'dev': self.target_device})
+        ET.SubElement(xml_top, 'driver',
+                      attrib={
+                          'name': self.driver_name,
+                          'type': self.driver_type,
+                          'cache': self.driver_cache})
+        return xml_top
 
 
 class VMNetwork:
-
     ''' Virtual Machine network representing class
     name            -- network device name
     mac             -- the MAC address of the quest interface
@@ -106,11 +116,10 @@ class VMNetwork:
         ET.SubElement(xml_top, 'mac', attrib={'address': self.mac})
         ET.SubElement(xml_top, 'model', attrib={'type': self.model})
         ET.SubElement(xml_top, 'script', attrib={'path': self.script_exec})
-        return ET.tostring(xml_top,
-                           encoding='utf8',
-                           method='xml',
-                           pretty_print=True)
-
-
+        return xml_top
 a = VMNetwork(name="vm-77", mac="010101")
-print a.dump_xml()
+b = VMDisk(name="asd", source='/asdasd/adasds/asd')
+print ET.tostring(b.dump_xml(),
+                  encoding='utf8',
+                  method='xml',
+                  pretty_print=True)
