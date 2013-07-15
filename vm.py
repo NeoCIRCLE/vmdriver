@@ -52,7 +52,7 @@ class VMDisk:
                  driver_name="qemu",
                  driver_type="qcow2",
                  driver_cache="normal",
-                 target_device="dev/vda"):
+                 target_device="vda"):
         self.name = name
         self.source = source
         self.disk_type = disk_type
@@ -62,7 +62,7 @@ class VMDisk:
         self.driver_cache = driver_cache
         self.target_device = target_device
 
-    def dump_xml(self):
+    def build_xml(self):
         xml_top = ET.Element('disk',
                              attrib={'type': self.disk_type,
                                      'device': self.disk_device})
@@ -77,8 +77,15 @@ class VMDisk:
                           'cache': self.driver_cache})
         return xml_top
 
+    def dump_xml(self):
+        return ET.tostring(self.build_xml(),
+                           encoding='utf8',
+                           method='xml',
+                           pretty_print=True)
+
 
 class VMNetwork:
+
     ''' Virtual Machine network representing class
     name            -- network device name
     mac             -- the MAC address of the quest interface
@@ -110,16 +117,21 @@ class VMNetwork:
         self.QoS = QoS
 
     # XML dump
-    def dump_xml(self):
+    def build_xml(self):
         xml_top = ET.Element('interface', attrib={'type': self.network_type})
         ET.SubElement(xml_top, 'target', attrib={'dev': self.name})
         ET.SubElement(xml_top, 'mac', attrib={'address': self.mac})
         ET.SubElement(xml_top, 'model', attrib={'type': self.model})
         ET.SubElement(xml_top, 'script', attrib={'path': self.script_exec})
         return xml_top
+
+    def dump_xml(self):
+        return ET.tostring(self.build_xml(), encoding='utf8',
+                           method='xml', pretty_print=True)
 a = VMNetwork(name="vm-77", mac="010101")
 b = VMDisk(name="asd", source='/asdasd/adasds/asd')
-print ET.tostring(b.dump_xml(),
-                  encoding='utf8',
-                  method='xml',
-                  pretty_print=True)
+vminst = VMInstance(name="Thisthename", vcpu="1",
+                    memory_max="2048", disk_list=[a], network_list=[b])
+# print a.dump_xml()
+# print b.dump_xml()
+print vminst.dump_xml()
