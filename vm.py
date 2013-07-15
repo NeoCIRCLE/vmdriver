@@ -6,6 +6,10 @@ import lxml.etree as ET
 
 class VMInstance:
     name = None
+    arch = None
+    vm_type = None
+    arch = None
+    os_boot = None
     vcpu = None
     cpu_share = None
     memory_max = None
@@ -16,23 +20,66 @@ class VMInstance:
     def __init__(self,
                  name,
                  vcpu,
-                 cpu_share,
                  memory_max,
-                 network_list,
-                 disk_list,
-                 context):
+                 cpu_share="100",
+                 arch="x86_64",
+                 os_boot="hd",
+                 vm_type="kvm",
+                 network_list=None,
+                 disk_list=None,
+                 context=None):
         '''Default Virtual Machine constructor
         '''
         self.name = name
         self.vcpu = vcpu
         self.cpu_share = cpu_share
         self.memory_max = memory_max
+        self.arch = arch
+        self.os_boot = os_boot
+        self.vm_type = vm_type
         self.network_list = network_list
         self.disk_list = disk_list
         self.conext = context
 
+    def build_xml(self):
+        '''Return the root Element Tree object
+        '''
+        ET.register_namespace(
+            'qemu', 'http://libvirt.org/schemas/domain/qemu/1.0')
+        xml_top = ET.Element(
+            'domain',
+            attrib={
+                'type': self.vm_type
+            })
+        # Basic virtual machine paramaters
+        ET.SubElement(xml_top, 'name').text = self.name
+        ET.SubElement(xml_top, 'vcpu').text = self.vcpu
+        ET.SubElement(xml_top, 'memory').text = self.memory_max
+        # Cpu tune
+        cputune = ET.SubElement(xml_top, 'cputune')
+        ET.SubElement(cputune, 'shares').text = self.cpu_share
+        # Os specific options
+        os = ET.SubElement(xml_top, 'os')
+        ET.SubElement(os, 'type', attrib={'arch': self.arch}).text = "hvm"
+        ET.SubElement(os, 'boot', attrib={'dev': self.os_boot})
+        # Devices
+        devices = ET.SubElement(xml_top, 'devices')
+        ET.SubElement(devices, 'emulator').text = '/usr/bin/kvm'
+        for disk in self.disk_list:
+            devices.append(disk.build_xml())
+        for network in self.network_list:
+            devices.append(network.build_xml())
+        return xml_top
+
+    def dump_xml(self):
+        return ET.tostring(self.build_xml(),
+                           encoding='utf8',
+                           method='xml',
+                           pretty_print=True)
+
 
 class VMDisk:
+
     '''Virtual MAchine disk representing class
     '''
     name = None
