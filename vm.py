@@ -98,7 +98,7 @@ class VMDisk:
                  disk_device="disk",
                  driver_name="qemu",
                  driver_type="qcow2",
-                 driver_cache="normal",
+                 driver_cache="default",
                  target_device="vda"):
         self.name = name
         self.source = source
@@ -175,7 +175,7 @@ class VMNetwork:
     def dump_xml(self):
         return ET.tostring(self.build_xml(), encoding='utf8',
                            method='xml', pretty_print=True)
-a = VMNetwork(name="vm-77", mac="010101")
+a = VMNetwork(name="vm-77", mac="02:00:00:00:00:00")
 b = VMDisk(name="asd", source='/asdasd/adasds/asd')
 vminst = VMInstance(name="Thisthename", vcpu="1",
                     memory_max="2048", disk_list=[a], network_list=[b])
