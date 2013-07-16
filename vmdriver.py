@@ -54,10 +54,9 @@ class VMDriver:
     def list_domains(self):
         return self.connection.listDefinedDomains()
 
-#Create VM
-a = vm.VMNetwork(name="vm-88", mac="02:00:00:00:00:00")
-b = vm.VMDisk(name="asd", source='/asdasd/adasds/asd')
-testvm = vm.VMInstance(name="Thisthename", vcpu="1",
-                       memory_max="2048",
-                       disk_list=[a],
-                       network_list=[b])
+    @req_connection
+    def lookupByName(self, name):
+        try:
+            self.connection.lookupByName(name)
+        except libvirt.libvirtError as e:
+            logging.error(e.get_error_message())
