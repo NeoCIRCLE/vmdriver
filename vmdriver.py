@@ -21,6 +21,9 @@ class VMDriver:
         return new_function
 
     def connect(self, connection_string='qemu:///system'):
+        '''Connect to the libvirt daemon specified in the
+        connection_string or the local root.
+        '''
         if self.connection is None:
             self.connection = libvirt.open(connection_string)
         else:
@@ -28,15 +31,22 @@ class VMDriver:
 
     @req_connection
     def disconnect(self, connection_string='qemu:///system'):
+        '''Disconnect from the active libvirt daemon connection.
+        '''
         self.connection.close()
         self.connection = None
 
     @req_connection
     def vm_define(self, vm):
+        '''Define permanent virtual machine from xml
+        '''
         self.connection.defineXML(vm.dump_xml())
         logging.info("Virtual machine %s is defined from xml", vm.name)
 
+    @req_connection
     def vm_create(self, vm):
+        '''Create and start non-permanent virtual machine from xml
+        '''
         self.connection.createXML(vm.dump_xml())
         logging.info("Virtual machine %s is created from xml", vm.name)
 
