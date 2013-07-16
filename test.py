@@ -47,7 +47,7 @@ xml_sample = '''
 if connection == None:
     print "Fail to connect to libvirt daemon."
     sys.exit(1)
-try
+try:
     names = connection.listDefinedDomains()
     print names
     connection.defineXML(xml_sample)
