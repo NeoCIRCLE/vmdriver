@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import libvirt
 import sys
 
@@ -35,7 +36,8 @@ xml_sample = '''
                         <mac address='02:00:0a:09:01:2d'/>
                         <model type='virtio'/>
                 </interface>
-                <graphics type='vnc' listen='0.0.0.0' port='8173' passwd='usxdfmnkfk'/>
+                <graphics type='vnc' listen='0.0.0.0'
+                port='8173' passwd='usxdfmnkfk'/>
         </devices>
         <features>
                 <acpi/>
@@ -44,7 +46,7 @@ xml_sample = '''
 </domain>
 '''
 
-if connection == None:
+if connection is None:
     print "Fail to connect to libvirt daemon."
     sys.exit(1)
 try:
@@ -53,4 +55,5 @@ try:
     connection.defineXML(xml_sample)
     print connection.listDefinedDomains()
 #    conn.undefineXML()
-
+except:
+    print "error"
