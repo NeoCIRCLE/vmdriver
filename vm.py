@@ -32,6 +32,18 @@ class VMInstance:
                  graphics=None,
                  acpi=True):
         '''Default Virtual Machine constructor
+        name    - unique name for the instance
+        vcpu    - nubmer of processors
+        memory_max  - maximum virtual memory (actual memory maybe add late)
+        cpu_share   - KVM process priority (0-100)
+        arch        - libvirt arch parameter default x86_64
+        os_boot     - boot device default hd
+        vm_type     - hypervisor type default kvm
+        network_list    - VMNetwork list
+        disk_list   - VMDIsk list
+        context  -   Key-Value pars (not used)
+        graphics    - Dict that keys are: type, listen, port, passwd
+        acpi        - True/False to enable acpi
         '''
         self.name = name
         self.vcpu = vcpu
