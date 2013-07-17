@@ -15,7 +15,8 @@ class VMInstance:
     memory_max = None
     network_list = list()
     disk_list = list()
-    context = dict()
+    graphics = dict
+    context = dict
 
     def __init__(self,
                  name,
@@ -27,7 +28,9 @@ class VMInstance:
                  vm_type="kvm",
                  network_list=None,
                  disk_list=None,
-                 context=None):
+                 context=None,
+                 graphics=None,
+                 acpi=True):
         '''Default Virtual Machine constructor
         '''
         self.name = name
@@ -40,6 +43,8 @@ class VMInstance:
         self.network_list = network_list
         self.disk_list = disk_list
         self.conext = context
+        self.graphics = graphics
+        self.acpi = acpi
 
     def build_xml(self):
         '''Return the root Element Tree object
@@ -69,6 +74,20 @@ class VMInstance:
             devices.append(disk.build_xml())
         for network in self.network_list:
             devices.append(network.build_xml())
+        # Console/graphics section
+        if self.graphics is not None:
+            ET.SubElement(devices,
+                          'graphics',
+                          attrib={
+                              'type': self.graphics['type'],
+                              'listen': self.graphics['listen'],
+                              'port': self.graphics['port'],
+                              'passwd': self.graphics['passwd'],
+                          })
+        # Features
+        features = ET.SubElement(xml_top, 'features')
+        if self.acpi:
+            ET.SubElement(features, 'acpi')
         return xml_top
 
     def dump_xml(self):
