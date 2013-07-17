@@ -167,6 +167,7 @@ class VMNetwork:
     ''' Virtual Machine network representing class
     name            -- network device name
     mac             -- the MAC address of the quest interface
+    vlan            -- Port VLAN configuration
     network_type    -- need to be "ethernet" by default
     model           -- available models in libvirt
     QoS             -- CIRCLE QoS class?
@@ -181,18 +182,21 @@ class VMNetwork:
     QoS = None
     script_exec = '/bin/true'
     comment = None
+    vlan = 0
 
     def __init__(self,
                  name,
                  mac,
                  network_type='ethernet',
                  model='virtio',
-                 QoS=None):
+                 QoS=None,
+                 vlan=0):
         self.name = name
         self.network_type = network_type
         self.mac = mac
         self.model = model
         self.QoS = QoS
+        self.vlan = vlan
 
     # XML dump
     def build_xml(self):
