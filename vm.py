@@ -175,10 +175,3 @@ class VMNetwork:
     def dump_xml(self):
         return ET.tostring(self.build_xml(), encoding='utf8',
                            method='xml', pretty_print=True)
-a = VMNetwork(name="vm-77", mac="02:00:00:00:00:00")
-b = VMDisk(name="asd", source='/asdasd/adasds/asd')
-vminst = VMInstance(name="Thisthename", vcpu="1",
-                    memory_max="2048", disk_list=[a], network_list=[b])
-# print a.dump_xml()
-# print b.dump_xml()
-print vminst.dump_xml()
