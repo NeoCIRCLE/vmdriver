@@ -61,8 +61,53 @@ class VMDriver:
 
     @req_connection
     def lookupByName(self, name):
+        '''Return with the requested Domain
+        '''
         try:
-            self.connection.lookupByName(name)
+            return self.connection.lookupByName(name)
         except libvirt.libvirtError as e:
             logging.error(e.get_error_message())
+
+    @req_connection
+    def vm_undefine(self, name):
+        '''Undefine an already defined virtual machine.
+        If it's running it becomes transient (lsot on reboot)
+        '''
+        vm = self.lookupByName(name)
+        try:
+            vm.undefine()
+        except:
+            logging.error('Can not get VM with name %s', name)
+
+    @req_connection
+    def vm_start(self, name):
+        '''Start an already defined virtual machine.
+        '''
+        vm = self.lookupByName(name)
+        vm.create()
+
+    @req_connection
+    def vm_save(self, name, path):
+        '''Stop virtual machine and save its memory to path.
+        '''
+        vm = self.lookupByName(name)
+        vm.save(path)
+
+    def vm_resume(self, name):
+        '''Resume stopped virtual machines.
+        '''
+        vm = self.lookupByName(name)
+        vm.resume()
+
+    def vm_reset(self, name):
+        '''Reset (power reset) virtual machine.
+        '''
+        vm = self.lookupByName(name)
+        vm.reset()
+
+    def vm_reboot(self, name):
+        '''Reboot (with guest acpi support) virtual machine.
+        '''
+        vm = self.lookupByName(name)
+        vm.reboot()
     #virDomainResume
