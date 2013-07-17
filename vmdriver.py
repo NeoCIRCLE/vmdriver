@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import libvirt
-import vm
 import logging
 
 
@@ -46,8 +45,14 @@ class VMDriver:
     @req_connection
     def vm_create(self, vm):
         '''Create and start non-permanent virtual machine from xml
+        flags can be:
+            VIR_DOMAIN_NONE = 0
+            VIR_DOMAIN_START_PAUSED = 1
+            VIR_DOMAIN_START_AUTODESTROY = 2
+            VIR_DOMAIN_START_BYPASS_CACHE = 4
+            VIR_DOMAIN_START_FORCE_BOOT = 8
         '''
-        self.connection.createXML(vm.dump_xml())
+        self.connection.createXML(vm.dump_xml(), libvirt.VIR_DOMAIN_NONE)
         logging.info("Virtual machine %s is created from xml", vm.name)
 
     @req_connection
@@ -60,3 +65,4 @@ class VMDriver:
             self.connection.lookupByName(name)
         except libvirt.libvirtError as e:
             logging.error(e.get_error_message())
+    #virDomainResume
