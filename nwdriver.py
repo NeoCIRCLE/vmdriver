@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+from subprocess import call
+import logging
+
 
 class NWDriver:
 
@@ -7,7 +10,9 @@ class NWDriver:
         pass
 
     def ovs_command_execute(self, command):
-        pass
+        return_val = call(['sudo', 'ovs-vsctl', command])
+        logging.info('OVS command: %s executed.', command)
+        return return_val
 
     def nw_create(self, vm):
         pass
