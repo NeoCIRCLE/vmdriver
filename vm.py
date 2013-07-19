@@ -166,6 +166,7 @@ class VMNetwork:
 
     ''' Virtual Machine network representing class
     name            -- network device name
+    bridge          -- bridg for the port
     mac             -- the MAC address of the quest interface
     vlan            -- Port VLAN configuration
     network_type    -- need to be "ethernet" by default
@@ -176,6 +177,7 @@ class VMNetwork:
     '''
     # Class attributes
     name = None
+    bridge = None
     network_type = None
     mac = None
     model = None
@@ -186,12 +188,14 @@ class VMNetwork:
 
     def __init__(self,
                  name,
+                 bridge,
                  mac,
                  network_type='ethernet',
                  model='virtio',
                  QoS=None,
                  vlan=0):
         self.name = name
+        self.bridge = bridge
         self.network_type = network_type
         self.mac = mac
         self.model = model
