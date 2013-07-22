@@ -14,8 +14,18 @@ class NWDriver:
         '''Execute OpenVSwitch commands
         command -   List of strings
         '''
-        return_val = subprocess.call(['sudo', 'ovs-vsctl'] + command)
+        command = ['sudo', 'ovs-vsctl'] + command
+        return_val = subprocess.call(command)
         logging.info('OVS command: %s executed.', command)
+        return return_val
+
+    def ofctl_command_execute(self, command):
+        '''Execute OpenVSwitch flow commands
+        command -   List of strings
+        '''
+        command = ['sudo', 'ovs-ofctl'] + command
+        return_val = subprocess.call(command)
+        logging.info('OVS flow command: %s executed.', command)
         return return_val
 
     def nw_create(self, vm):
@@ -23,7 +33,8 @@ class NWDriver:
             self.port_create(network)
 
     def nw_delete(self, vm):
-        pass
+        for network in vm.network_list:
+            self.port_delete(network)
 
     def port_create(self, network):
         '''
@@ -37,11 +48,11 @@ class NWDriver:
         add-flow cloud in_port=245,priority=39000,actions=drop".
         '''
         # Create the port for virtual network
-        cmd_list = ['add_port', network.bridge, network.name]
+        cmd_list = ['add-port', network.bridge, network.name]
         self.ovs_command_execute(cmd_list)
 
         # Set VLAN parameter for tap interface
-        cmd_list = ['set', 'Port', network.name, network.vlan]
+        cmd_list = ['set', 'Port', network.name, 'tag='+str(network.vlan)]
         self.ovs_command_execute(cmd_list)
 
         # Getting network FlowPortNumber
@@ -53,7 +64,7 @@ class NWDriver:
                     'in_port=%(port_number)s,dl_src=%(mac)s,udp,tp_dst=68,\
                             priority=43000,actions=drop' % {
                     'port_number': port_number, 'mac': network.mac}]
-        self.ovs_command_execute(cmd_list)
+        self.ofctl_command_execute(cmd_list)
 
         # Set flow rules 2 (ipv4 filter)
         cmd_list = ['add-flow', network.bridge,
@@ -61,7 +72,7 @@ class NWDriver:
                             nw_src=%(ipv4)s,priority=42000,actions=normal' % {
             'port_number': port_number,
             'mac': network.mac, 'ipv4': network.ipv4}]
-        self.ovs_command_execute(cmd_list)
+        self.ofctl_command_execute(cmd_list)
 
         # Set flow rules 3 (ipv6 filter)
         cmd_list = ['add-flow', network.bridge,
@@ -69,7 +80,7 @@ class NWDriver:
                             nw_src=%(ipv6)s,priority=42000,actions=normal' % {
             'port_number': port_number,
             'mac': network.mac, 'ipv6': network.ipv6}]
-        self.ovs_command_execute(cmd_list)
+        self.ofctl_command_execute(cmd_list)
 
         # Set flow rules 4 (enabling arp)
         cmd_list = ['add-flow', network.bridge,
@@ -77,24 +88,28 @@ class NWDriver:
                             nw_src=%(ipv4)s,priority=41000,actions=normal' % {
             'port_number': port_number,
             'mac': network.mac, 'ipv4': network.ipv4}]
-        self.ovs_command_execute(cmd_list)
+        self.ofctl_command_execute(cmd_list)
 
         # Set flow rules 5 (enabling arp)
         cmd_list = ['add-flow', network.bridge,
                     'in_port=%(port_number)s,dl_src=%(mac)s,udp,tp_dst=67,\
                             priority=40000,actions=normal' % {
                     'port_number': port_number, 'mac': network.mac}]
-        self.ovs_command_execute(cmd_list)
+        self.ofctl_command_execute(cmd_list)
 
         # Set flow rule 6 (disable other protocols)
         cmd_list = ['add-flow', network.bridge,
                     'in_port=%(port_number)s,priority=39000,actions=drop' % {
                         'port_number': port_number}]
+        self.ofctl_command_execute(cmd_list)
+
+    def port_delete(self, network):
+        cmd_list = ['del-port', network.name]
         self.ovs_command_execute(cmd_list)
 
     def get_port_number(self, network):
         '''Returns the OpenFlow port number for a given network
         '''
         output = subprocess.check_output(
-            ['ovs-ofctl', 'dump-ports', network.bridge, network.name])
-        return re.search('port ([0-9]+)', output).group(1)
+            ['sudo', 'ovs-ofctl', 'dump-ports', network.bridge, network.name])
+        return re.search('port *([0-9]+)', output).group(1)
