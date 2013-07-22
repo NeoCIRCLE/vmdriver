@@ -56,6 +56,13 @@ class VMDriver:
         logging.info("Virtual machine %s is created from xml", vm.name)
 
     @req_connection
+    def vm_delete(self, vm):
+        '''Destroy the running called 'name' virtual machine.
+        '''
+        domain = self.lookupByName(vm.name)
+        domain.destroy()
+
+    @req_connection
     def list_domains(self):
         return self.connection.listDefinedDomains()
 
@@ -73,9 +80,9 @@ class VMDriver:
         '''Undefine an already defined virtual machine.
         If it's running it becomes transient (lsot on reboot)
         '''
-        vm = self.lookupByName(name)
+        domain = self.lookupByName(name)
         try:
-            vm.undefine()
+            domain.undefine()
         except:
             logging.error('Can not get VM with name %s', name)
 
@@ -83,31 +90,31 @@ class VMDriver:
     def vm_start(self, name):
         '''Start an already defined virtual machine.
         '''
-        vm = self.lookupByName(name)
-        vm.create()
+        domain = self.lookupByName(name)
+        domain.create()
 
     @req_connection
     def vm_save(self, name, path):
         '''Stop virtual machine and save its memory to path.
         '''
-        vm = self.lookupByName(name)
-        vm.save(path)
+        domain = self.lookupByName(name)
+        domain.save(path)
 
     def vm_resume(self, name):
         '''Resume stopped virtual machines.
         '''
-        vm = self.lookupByName(name)
-        vm.resume()
+        domain = self.lookupByName(name)
+        domain.resume()
 
     def vm_reset(self, name):
         '''Reset (power reset) virtual machine.
         '''
-        vm = self.lookupByName(name)
-        vm.reset()
+        domain = self.lookupByName(name)
+        domain.reset()
 
     def vm_reboot(self, name):
         '''Reboot (with guest acpi support) virtual machine.
         '''
-        vm = self.lookupByName(name)
-        vm.reboot()
+        domain = self.lookupByName(name)
+        domain.reboot()
     #virDomainResume
