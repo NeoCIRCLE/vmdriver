@@ -168,6 +168,8 @@ class VMNetwork:
     name            -- network device name
     bridge          -- bridg for the port
     mac             -- the MAC address of the quest interface
+    ipv4            -- the IPv4 address of virtual machine (Flow control)
+    ipv6            -- the IPv6 address of virtual machine (Flow controlo)
     vlan            -- Port VLAN configuration
     network_type    -- need to be "ethernet" by default
     model           -- available models in libvirt
@@ -185,11 +187,15 @@ class VMNetwork:
     script_exec = '/bin/true'
     comment = None
     vlan = 0
+    ipv4 = None
+    ipv6 = None
 
     def __init__(self,
                  name,
                  bridge,
                  mac,
+                 ipv4=None,
+                 ipv6=None,
                  network_type='ethernet',
                  model='virtio',
                  QoS=None,
@@ -198,6 +204,8 @@ class VMNetwork:
         self.bridge = bridge
         self.network_type = network_type
         self.mac = mac
+        self.ipv4 = ipv4
+        self.ipv6 = ipv6
         self.model = model
         self.QoS = QoS
         self.vlan = vlan
