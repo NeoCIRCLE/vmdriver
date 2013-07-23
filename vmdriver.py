@@ -56,7 +56,7 @@ def define(vm):
 
 
 @req_connection
-def create(self, vm):
+def create(vm):
     '''Create and start non-permanent virtual machine from xml
     flags can be:
         VIR_DOMAIN_NONE = 0
@@ -65,7 +65,7 @@ def create(self, vm):
         VIR_DOMAIN_START_BYPASS_CACHE = 4
         VIR_DOMAIN_START_FORCE_BOOT = 8
     '''
-    self.connection.createXML(vm.dump_xml(), libvirt.VIR_DOMAIN_NONE)
+    connection.createXML(vm.dump_xml(), libvirt.VIR_DOMAIN_START_PAUSED)
     logging.info("Virtual machine %s is created from xml", vm.name)
 
 
@@ -102,41 +102,41 @@ def undefine(name):
 
 
 @req_connection
-def start(self, name):
+def start(name):
     '''Start an already defined virtual machine.
     '''
-    domain = self.lookupByName(name)
+    domain = lookupByName(name)
     domain.create()
 
 
 @req_connection
-def save(self, name, path):
+def save(name, path):
     '''Stop virtual machine and save its memory to path.
     '''
-    domain = self.lookupByName(name)
+    domain = lookupByName(name)
     domain.save(path)
 
 
 @req_connection
-def resume(self, name):
+def resume(name):
     '''Resume stopped virtual machines.
     '''
-    domain = self.lookupByName(name)
+    domain = lookupByName(name)
     domain.resume()
 
 
 @req_connection
-def reset(self, name):
+def reset(name):
     '''Reset (power reset) virtual machine.
     '''
-    domain = self.lookupByName(name)
+    domain = lookupByName(name)
     domain.reset()
 
 
 @req_connection
-def reboot(self, name):
+def reboot(name):
     '''Reboot (with guest acpi support) virtual machine.
     '''
-    domain = self.lookupByName(name)
+    domain = lookupByName(name)
     domain.reboot()
 # virDomainResume
