@@ -217,6 +217,7 @@ class VMNetwork:
         ET.SubElement(xml_top, 'mac', attrib={'address': self.mac})
         ET.SubElement(xml_top, 'model', attrib={'type': self.model})
         ET.SubElement(xml_top, 'script', attrib={'path': self.script_exec})
+        ET.SubElement(xml_top, 'rom', attrib={'bar': 'off'})
         return xml_top
 
     def dump_xml(self):
