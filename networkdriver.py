@@ -76,7 +76,7 @@ def port_create(network):
     # Set flow rules 3 (ipv6 filter)
     cmd_list = ['add-flow', network.bridge,
                 'in_port=%(port_number)s,dl_src=%(mac)s,ipv6,\
-                        nw_src=%(ipv6)s,priority=42000,actions=normal' % {
+                        ipv6_src=%(ipv6)s,priority=42000,actions=normal' % {
         'port_number': port_number,
         'mac': network.mac, 'ipv6': network.ipv6}]
     ofctl_command_execute(cmd_list)
