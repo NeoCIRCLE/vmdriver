@@ -25,12 +25,12 @@ def ofctl_command_execute(command):
     return return_val
 
 
-def nw_create(vm):
+def create(vm):
     for network in vm.network_list:
         port_create(network)
 
 
-def nw_delete(vm):
+def delete(vm):
     for network in vm.network_list:
         port_delete(network)
 

@@ -8,7 +8,6 @@ class VMInstance:
     name = None
     arch = None
     vm_type = None
-    arch = None
     os_boot = None
     vcpu = None
     cpu_share = None
