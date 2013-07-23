@@ -10,14 +10,16 @@ connection = None
 def req_connection(original_function):
     '''Connection checking decorator for libvirt.
     '''
+
     def new_function(*args, **kwargs):
         global connection
         if connection is None:
-            connection = connect()
-        else:
+            connect()
+        try:
             return_value = original_function(*args, **kwargs)
+        finally:
             disconnect()
-            return return_value
+        return return_value
     return new_function
 
 
