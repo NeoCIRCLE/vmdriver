@@ -4,117 +4,137 @@ import libvirt
 import logging
 
 
-class VMDriver:
-    '''Circle Virtal Machin driver main class
+connection = None
+
+
+def req_connection(original_function):
+    '''Connection checking decorator for libvirt.
     '''
-    connection = None
-
-    def req_connection(original_function):
-        '''Connection checking decorator for libvirt.
-        '''
-        def new_function(*args, **kwargs):
-            if args[0].connection is None:
-                logging.error("No connection to libvirt daemon.")
-            else:
-                return original_function(*args, **kwargs)
-        return new_function
-
-    def connect(self, connection_string='qemu:///system'):
-        '''Connect to the libvirt daemon specified in the
-        connection_string or the local root.
-        '''
-        if self.connection is None:
-            self.connection = libvirt.open(connection_string)
+    def new_function(*args, **kwargs):
+        global connection
+        if connection is None:
+            connection = connect()
         else:
-            logging.error("There is already an active connection to libvirt.")
+            return_value = original_function(*args, **kwargs)
+            disconnect()
+            return return_value
+    return new_function
 
-    @req_connection
-    def disconnect(self, connection_string='qemu:///system'):
-        '''Disconnect from the active libvirt daemon connection.
-        '''
-        self.connection.close()
-        self.connection = None
 
-    @req_connection
-    def vm_define(self, vm):
-        '''Define permanent virtual machine from xml
-        '''
-        self.connection.defineXML(vm.dump_xml())
-        logging.info("Virtual machine %s is defined from xml", vm.name)
+def connect(connection_string='qemu:///system'):
+    '''Connect to the libvirt daemon specified in the
+    connection_string or the local root.
+    '''
+    global connection
+    if connection is None:
+        connection = libvirt.open(connection_string)
+        logging.debug("Connection estabilished to libvirt.")
+    else:
+        logging.error("There is already an active connection to libvirt.")
 
-    @req_connection
-    def vm_create(self, vm):
-        '''Create and start non-permanent virtual machine from xml
-        flags can be:
-            VIR_DOMAIN_NONE = 0
-            VIR_DOMAIN_START_PAUSED = 1
-            VIR_DOMAIN_START_AUTODESTROY = 2
-            VIR_DOMAIN_START_BYPASS_CACHE = 4
-            VIR_DOMAIN_START_FORCE_BOOT = 8
-        '''
-        self.connection.createXML(vm.dump_xml(), libvirt.VIR_DOMAIN_NONE)
-        logging.info("Virtual machine %s is created from xml", vm.name)
 
-    @req_connection
-    def vm_delete(self, vm):
-        '''Destroy the running called 'name' virtual machine.
-        '''
-        domain = self.lookupByName(vm.name)
-        domain.destroy()
+def disconnect():
+    '''Disconnect from the active libvirt daemon connection.
+    '''
+    global connection
+    if connection is None:
+        logging.debug('There is no available libvirt conection.')
+    else:
+        connection.close()
+        logging.debug('Connection closed to libvirt.')
+        connection = None
 
-    @req_connection
-    def list_domains(self):
-        return self.connection.listDefinedDomains()
 
-    @req_connection
-    def lookupByName(self, name):
-        '''Return with the requested Domain
-        '''
-        try:
-            return self.connection.lookupByName(name)
-        except libvirt.libvirtError as e:
-            logging.error(e.get_error_message())
+@req_connection
+def define(vm):
+    '''Define permanent virtual machine from xml
+    '''
+    connection.defineXML(vm.dump_xml())
+    logging.info("Virtual machine %s is defined from xml", vm.name)
 
-    @req_connection
-    def vm_undefine(self, name):
-        '''Undefine an already defined virtual machine.
-        If it's running it becomes transient (lsot on reboot)
-        '''
-        domain = self.lookupByName(name)
-        try:
-            domain.undefine()
-        except:
-            logging.error('Can not get VM with name %s', name)
 
-    @req_connection
-    def vm_start(self, name):
-        '''Start an already defined virtual machine.
-        '''
-        domain = self.lookupByName(name)
-        domain.create()
+@req_connection
+def create(self, vm):
+    '''Create and start non-permanent virtual machine from xml
+    flags can be:
+        VIR_DOMAIN_NONE = 0
+        VIR_DOMAIN_START_PAUSED = 1
+        VIR_DOMAIN_START_AUTODESTROY = 2
+        VIR_DOMAIN_START_BYPASS_CACHE = 4
+        VIR_DOMAIN_START_FORCE_BOOT = 8
+    '''
+    self.connection.createXML(vm.dump_xml(), libvirt.VIR_DOMAIN_NONE)
+    logging.info("Virtual machine %s is created from xml", vm.name)
 
-    @req_connection
-    def vm_save(self, name, path):
-        '''Stop virtual machine and save its memory to path.
-        '''
-        domain = self.lookupByName(name)
-        domain.save(path)
 
-    def vm_resume(self, name):
-        '''Resume stopped virtual machines.
-        '''
-        domain = self.lookupByName(name)
-        domain.resume()
+@req_connection
+def delete(name):
+    '''Destroy the running called 'name' virtual machine.
+    '''
+    domain = lookupByName(name)
+    domain.destroy()
 
-    def vm_reset(self, name):
-        '''Reset (power reset) virtual machine.
-        '''
-        domain = self.lookupByName(name)
-        domain.reset()
 
-    def vm_reboot(self, name):
-        '''Reboot (with guest acpi support) virtual machine.
-        '''
-        domain = self.lookupByName(name)
-        domain.reboot()
-    #virDomainResume
+@req_connection
+def list_domains():
+    return connection.listDefinedDomains()
+
+
+@req_connection
+def lookupByName(name):
+    '''Return with the requested Domain
+    '''
+    try:
+        return connection.lookupByName(name)
+    except libvirt.libvirtError as e:
+        logging.error(e.get_error_message())
+
+
+@req_connection
+def undefine(name):
+    '''Undefine an already defined virtual machine.
+    If it's running it becomes transient (lsot on reboot)
+    '''
+    domain = lookupByName(name)
+    domain.undefine()
+
+
+@req_connection
+def start(self, name):
+    '''Start an already defined virtual machine.
+    '''
+    domain = self.lookupByName(name)
+    domain.create()
+
+
+@req_connection
+def save(self, name, path):
+    '''Stop virtual machine and save its memory to path.
+    '''
+    domain = self.lookupByName(name)
+    domain.save(path)
+
+
+@req_connection
+def resume(self, name):
+    '''Resume stopped virtual machines.
+    '''
+    domain = self.lookupByName(name)
+    domain.resume()
+
+
+@req_connection
+def reset(self, name):
+    '''Reset (power reset) virtual machine.
+    '''
+    domain = self.lookupByName(name)
+    domain.reset()
+
+
+@req_connection
+def reboot(self, name):
+    '''Reboot (with guest acpi support) virtual machine.
+    '''
+    domain = self.lookupByName(name)
+    domain.reboot()
+# virDomainResume
