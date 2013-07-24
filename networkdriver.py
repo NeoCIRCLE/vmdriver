@@ -34,8 +34,19 @@ def delete(vm):
         port_delete(network)
 
 
+def build_flow_rule():
+
+
+def ban_dhcp_server(network, port_number):
+    cmd_list = ['add-flow', network.bridge,
+                'in_port=%(port_number)s,dl_src=%(mac)s,udp,tp_dst=68,\
+                        priority=43000,actions=drop' % {
+                'port_number': port_number, 'mac': network.mac}]
+    return cmd_list
+
+
 def port_create(network):
-    '''
+     '''
     add-port BRIDGE PORT
     set Port vnet18 tag=9
     add-flow cloud in_port=245,dl_src=02:00:0a:09:01:8a,udp,tp_dst=68,priority=43000,actions=drop".
@@ -58,12 +69,7 @@ def port_create(network):
 
     # Set Flow rules to avoid mac or IP spoofing
     # Set flow rule 1 (dhcp server ban)
-    cmd_list = ['add-flow', network.bridge,
-                'in_port=%(port_number)s,dl_src=%(mac)s,udp,tp_dst=68,\
-                        priority=43000,actions=drop' % {
-                'port_number': port_number, 'mac': network.mac}]
-    ofctl_command_execute(cmd_list)
-
+    ofctl_command_execute(ban_dhcp_server(network, port_number))
     # Set flow rules 2 (ipv4 filter)
     cmd_list = ['add-flow', network.bridge,
                 'in_port=%(port_number)s,dl_src=%(mac)s,ip,\
@@ -103,8 +109,19 @@ def port_create(network):
 
 
 def port_delete(network):
-    cmd_list = ['del-port', network.name]
-    ovs_command_execute(cmd_list)
+
+    # Getting network FlowPortNumber
+    port_number = get_fport_for_network(network)
+
+    # Delete flow
+    cmd_list = ['del-flows', network.bridge,
+                'in_port=%(port_number)s,dl_src=%(mac)s,udp,tp_dst=68' % {
+                'port_number': port_number, 'mac': network.mac}]
+    ofctl_command_execute(cmd_list)
+
+    # Delete port
+    # cmd_list = ['del-port', network.name]
+    # ovs_command_execute(cmd_list)
 
 
 def get_fport_for_network(network):
