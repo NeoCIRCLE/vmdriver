@@ -2,7 +2,6 @@
 
 import subprocess
 import logging
-import re
 
 
 def ovs_command_execute(command):
@@ -55,7 +54,7 @@ def port_create(network):
     ovs_command_execute(cmd_list)
 
     # Getting network FlowPortNumber
-    port_number = get_port_number(network)
+    port_number = get_fport_for_network(network)
 
     # Set Flow rules to avoid mac or IP spoofing
     # Set flow rule 1 (dhcp server ban)
@@ -108,9 +107,10 @@ def port_delete(network):
     ovs_command_execute(cmd_list)
 
 
-def get_port_number(network):
+def get_fport_for_network(network):
     '''Returns the OpenFlow port number for a given network
+    cmd: ovs-vsctl get Interface vm-88 ofport
     '''
     output = subprocess.check_output(
-        ['sudo', 'ovs-ofctl', 'dump-ports', network.bridge, network.name])
-    return re.search('port *([0-9]+)', output).group(1)
+        ['sudo', 'ovs-vsctl', 'get', 'Interface', network.name, 'ofport'])
+    return output
