@@ -12,12 +12,15 @@ def req_connection(original_function):
     '''
 
     def new_function(*args, **kwargs):
+        logging.debug("Decorator running")
         global connection
         if connection is None:
             connect()
         try:
+            logging.debug("Decorator calling original function")
             return_value = original_function(*args, **kwargs)
         finally:
+            logging.debug("Finally part of decorator")
             disconnect()
         return return_value
     return new_function
