@@ -174,6 +174,7 @@ class VMNetwork:
     model           -- available models in libvirt
     QoS             -- CIRCLE QoS class?
     comment         -- Any comment
+    managed         -- Apply managed flow rules like Ip and mac spoofing prevent
     script          -- Executable network script /bin/true by default
     '''
     # Class attributes
@@ -188,6 +189,7 @@ class VMNetwork:
     vlan = 0
     ipv4 = None
     ipv6 = None
+    managed = False
 
     def __init__(self,
                  name,
@@ -198,7 +200,8 @@ class VMNetwork:
                  network_type='ethernet',
                  model='virtio',
                  QoS=None,
-                 vlan=0):
+                 vlan=0,
+                 managed=False):
         self.name = name
         self.bridge = bridge
         self.network_type = network_type
@@ -208,6 +211,7 @@ class VMNetwork:
         self.model = model
         self.QoS = QoS
         self.vlan = vlan
+        self.managed = managed
 
     # XML dump
     def build_xml(self):
