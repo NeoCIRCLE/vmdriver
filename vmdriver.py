@@ -2,7 +2,8 @@
 
 import libvirt
 import logging
-
+import os
+import decorator
 
 connection = None
 
@@ -16,23 +17,28 @@ state_dict = {0: 'NOSTATE',
               7: 'PMSUSPENDED'
               }
 
-
+@decorator.decorator
 def req_connection(original_function):
     '''Connection checking decorator for libvirt.
     '''
-
     def new_function(*args, **kwargs):
         logging.debug("Decorator running")
         global connection
         if connection is None:
             connect()
-        try:
-            logging.debug("Decorator calling original function")
+            try:
+                logging.debug("Decorator calling original function")
+                return_value = original_function(*args, **kwargs)
+            finally:
+                logging.debug("Finally part of decorator")
+                disconnect()
+            return return_value
+        else:
+            logging.debug("Decorator calling original \
+                          function with active connection")
             return_value = original_function(*args, **kwargs)
-        finally:
-            logging.debug("Finally part of decorator")
-            disconnect()
-        return return_value
+            return return_value
+    new_function.__dict__.update(original_function.__dict__)
     return new_function
 
 
@@ -199,4 +205,47 @@ def domain_info(name):
     info = dict(zip(keys, values))
     info['state'] = state_dict[info['state']]
     return info
+
+
+@req_connection
+def send_key(name, key_code):
+    ''' Sending linux key_code to the name vm
+        key_code can be optained from linux_keys.py
+        e.x: linuxkeys.KEY_RIGHT_CTRL
+    '''
+    domain = lookupByName(name)
+    domain.sendKey(libvirt.VIR_KEYCODE_SET_LINUX, 100, [key_code], 1, 0)
+
+
+def _stream_handler(stream, buf, opaque):
+    fd = opaque
+    os.write(fd, buf)
+
+
+@req_connection
+def screenshot(name, path):
+    """Save screenshot of virtual machine
+        to the path as name-screenshot.ppm
+    """
+    # Import linuxkeys to get defines
+    import linuxkeys
+    # Connection need for the stream object
+    global connection
+    domain = lookupByName(name)
+    # Send key to wake up console
+    domain.sendKey(libvirt.VIR_KEYCODE_SET_LINUX,
+                   100, [linuxkeys.KEY_RIGHTCTRL], 1, 0)
+    # Create Stream to get data
+    stream = connection.newStream(0)
+    # Take screenshot accessible by stream (return mimetype)
+    domain.screenshot(stream, 0, 0)
+    # Get file to save data (TODO: send on AMQP?)
+    try:
+        fd = os.open(path + name + "-screenshot.ppm",
+                     os.O_WRONLY | os.O_TRUNC | os.O_CREAT, 0o644)
+        # Save data with handler
+        stream.recvAll(_stream_handler, fd)
+    finally:
+        stream.finish()
+        os.close(fd)
 # virDomainResume
