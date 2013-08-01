@@ -92,7 +92,14 @@ def delete(name):
 
 @req_connection
 def list_domains():
-    return connection.listDefinedDomains()
+    '''
+    :return list: List of domains name in host
+    '''
+    domain_list = []
+    for i in connection.listDomainsID():
+        dom = connection.lookupByID(i)
+        domain_list += dom.name()
+    return domain_list
 
 
 @req_connection
@@ -152,4 +159,44 @@ def reboot(name):
     '''
     domain = lookupByName(name)
     domain.reboot()
+
+
+@req_connection
+def node_info():
+    ''' Get info from Host as dict:
+    model   string indicating the CPU model
+    memory  memory size in kilobytes
+    cpus    the number of active CPUs
+    mhz     expected CPU frequency
+    nodes    the number of NUMA cell, 1 for unusual NUMA
+             topologies or uniform memory access;
+             check capabilities XML for the actual NUMA topology
+    sockets  number of CPU sockets per node if nodes > 1,
+             1 in case of unusual NUMA topology
+    cores    number of cores per socket, total number of
+             processors in case of unusual NUMA topolog
+    threads  number of threads per core, 1 in case of unusual numa topology
+    '''
+    keys = ['model', 'memory', 'cpus', 'mhz',
+            'nodes', 'sockets', 'cores', 'threads']
+    values = connection.getInfo()
+    return dict(zip(keys, values))
+
+
+@req_connection
+def domain_info(name):
+    '''
+    state   the running state, one of virDomainState
+    maxmem  the maximum memory in KBytes allowed
+    memory  the memory in KBytes used by the domain
+    virtcpunum    the number of virtual CPUs for the domain
+    cputime    the CPU time used in nanoseconds
+    '''
+    keys = ['state', 'maxmem', 'memory', 'virtcpunum', 'cputime']
+    dom = lookupByName(name)
+    values = dom.info()
+    # Change state to proper ENUM
+    info = dict(zip(keys, values))
+    info['state'] = state_dict[info['state']]
+    return info
 # virDomainResume
