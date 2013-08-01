@@ -16,6 +16,7 @@ class VMInstance:
     disk_list = list()
     graphics = dict
     context = dict
+    raw_data = None
 
     def __init__(self,
                  name,
@@ -29,7 +30,8 @@ class VMInstance:
                  disk_list=None,
                  context=None,
                  graphics=None,
-                 acpi=True):
+                 acpi=True,
+                 raw_data=None):
         '''Default Virtual Machine constructor
         name    - unique name for the instance
         vcpu    - nubmer of processors
@@ -56,6 +58,7 @@ class VMInstance:
         self.conext = context
         self.graphics = graphics
         self.acpi = acpi
+        self.raw_data = raw_data
 
     def build_xml(self):
         '''Return the root Element Tree object
@@ -95,10 +98,13 @@ class VMInstance:
                               'port': self.graphics['port'],
                               'passwd': self.graphics['passwd'],
                           })
-        # Features
+        # Features (TODO: features as list)
         features = ET.SubElement(xml_top, 'features')
         if self.acpi:
             ET.SubElement(features, 'acpi')
+        # Building raw data into xml
+        if self.raw_data is not None:
+            xml_top.append(ET.fromstring(self.raw_data))
         return xml_top
 
     def dump_xml(self):
@@ -174,7 +180,7 @@ class VMNetwork:
     model           -- available models in libvirt
     QoS             -- CIRCLE QoS class?
     comment         -- Any comment
-    managed         -- Apply managed flow rules like Ip and mac spoofing prevent
+    managed         -- Apply managed flow rules for spoofing prevent
     script          -- Executable network script /bin/true by default
     '''
     # Class attributes
