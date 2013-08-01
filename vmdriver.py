@@ -6,6 +6,16 @@ import logging
 
 connection = None
 
+state_dict = {0: 'NOSTATE',
+              1: 'RUNNING',
+              2: 'BLOCKED',
+              3: 'PAUSED',
+              4: 'SHUTDOWN',
+              5: 'SHUTOFF',
+              6: 'CRASHED',
+              7: 'PMSUSPENDED'
+              }
+
 
 def req_connection(original_function):
     '''Connection checking decorator for libvirt.
