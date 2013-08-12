@@ -3,7 +3,7 @@
 import libvirt
 import logging
 import os
-import decorator
+from decorator import decorator
 
 connection = None
 
@@ -18,28 +18,26 @@ state_dict = {0: 'NOSTATE',
               }
 
 
-@decorator.decorator
-def req_connection(original_function):
+@decorator
+def req_connection(original_function, *args, **kw):
     '''Connection checking decorator for libvirt.
     '''
-    def new_function(*args, **kwargs):
-        logging.debug("Decorator running")
-        global connection
-        if connection is None:
-            connect()
-            try:
-                logging.debug("Decorator calling original function")
-                return_value = original_function(*args, **kwargs)
-            finally:
-                logging.debug("Finally part of decorator")
-                disconnect()
-            return return_value
-        else:
-            logging.debug("Decorator calling original \
-                          function with active connection")
-            return_value = original_function(*args, **kwargs)
-            return return_value
-    return new_function
+    logging.debug("Decorator running")
+    global connection
+    if connection is None:
+        connect()
+        try:
+            logging.debug("Decorator calling original function")
+            return_value = original_function(*args, **kw)
+        finally:
+            logging.debug("Finally part of decorator")
+            disconnect()
+        return return_value
+    else:
+        logging.debug("Decorator calling original \
+                        function with active connection")
+        return_value = original_function(*args, **kw)
+        return return_value
 
 
 def connect(connection_string='qemu:///system'):
