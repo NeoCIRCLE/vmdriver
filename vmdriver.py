@@ -17,6 +17,7 @@ state_dict = {0: 'NOSTATE',
               7: 'PMSUSPENDED'
               }
 
+
 @decorator.decorator
 def req_connection(original_function):
     '''Connection checking decorator for libvirt.
@@ -38,7 +39,6 @@ def req_connection(original_function):
                           function with active connection")
             return_value = original_function(*args, **kwargs)
             return return_value
-    new_function.__dict__.update(original_function.__dict__)
     return new_function
 
 
@@ -211,7 +211,7 @@ def domain_info(name):
 def send_key(name, key_code):
     ''' Sending linux key_code to the name vm
         key_code can be optained from linux_keys.py
-        e.x: linuxkeys.KEY_RIGHT_CTRL
+        e.x: linuxkeys.KEY_RIGHTCTRL
     '''
     domain = lookupByName(name)
     domain.sendKey(libvirt.VIR_KEYCODE_SET_LINUX, 100, [key_code], 1, 0)
@@ -241,7 +241,7 @@ def screenshot(name, path):
     domain.screenshot(stream, 0, 0)
     # Get file to save data (TODO: send on AMQP?)
     try:
-        fd = os.open(path + name + "-screenshot.ppm",
+        fd = os.open(path + "/" + name + "-screenshot.ppm",
                      os.O_WRONLY | os.O_TRUNC | os.O_CREAT, 0o644)
         # Save data with handler
         stream.recvAll(_stream_handler, fd)
