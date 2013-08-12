@@ -31,7 +31,9 @@ class VMInstance:
                  context=None,
                  graphics=None,
                  acpi=True,
-                 raw_data=None):
+                 raw_data=None,
+                 seclabel_type="dynamic",
+                 seclabel_mode="apparmor"):
         '''Default Virtual Machine constructor
         name    - unique name for the instance
         vcpu    - nubmer of processors
@@ -45,6 +47,8 @@ class VMInstance:
         context  -   Key-Value pars (not used)
         graphics    - Dict that keys are: type, listen, port, passwd
         acpi        - True/False to enable acpi
+        seclabel_type - libvirt security label type
+        seclabel_mode - libvirt security mode (selinux, apparmor)
         '''
         self.name = name
         self.vcpu = vcpu
@@ -59,6 +63,8 @@ class VMInstance:
         self.graphics = graphics
         self.acpi = acpi
         self.raw_data = raw_data
+        self.seclabel_type = seclabel_type
+        self.seclabel_mode = seclabel_mode
 
     def build_xml(self):
         '''Return the root Element Tree object
@@ -105,6 +111,11 @@ class VMInstance:
         # Building raw data into xml
         if self.raw_data is not None:
             xml_top.append(ET.fromstring(self.raw_data))
+        # Security label
+        ET.SubElement(xml_top, 'seclabel', attrib={
+            'type': self.seclabel_type,
+            'mode': self.seclabel_mode
+        })
         return xml_top
 
     def dump_xml(self):
@@ -134,7 +145,7 @@ class VMDisk:
                  disk_device="disk",
                  driver_name="qemu",
                  driver_type="qcow2",
-                 driver_cache="default",
+                 driver_cache="none",
                  target_device="vda"):
         self.name = name
         self.source = source
