@@ -246,4 +246,18 @@ def screenshot(name, path):
     finally:
         stream.finish()
         os.close(fd)
+
+
+@req_connection
+def migrate(name, host, live=False):
+    '''Migrate domain to host'''
+    flags = libvirt.VIR_MIGRATE_PEER2PEER
+    if live:
+        flags = flags | libvirt.VIR_MIGRATE_LIVE
+    domain = lookupByName(name)
+    domain.migrateToURI(
+        duri="qemu+tcp://" + host + "/system",
+        flags=flags,
+        dname=name,
+        bandwidth=0)
 # virDomainResume
