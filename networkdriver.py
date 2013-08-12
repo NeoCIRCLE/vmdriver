@@ -200,6 +200,13 @@ def port_delete(network):
     del_port_from_bridge(network.name)
 
 
+def pull_up_interface(network):
+    command = ['sudo', 'ip', 'link', 'set', 'up', network]
+    return_val = subprocess.call(command)
+    logging.info('IP command: %s executed.', command)
+    return return_val
+
+
 def get_fport_for_network(network):
     '''Returns the OpenFlow port number for a given network
     cmd: ovs-vsctl get Interface vm-88 ofport
