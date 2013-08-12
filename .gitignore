@@ -1,0 +1,5 @@
+#Loggin files
+example.log
+
+#Compiled / generated files
+*.pyc
