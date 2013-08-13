@@ -213,6 +213,26 @@ def domain_info(name):
 
 
 @req_connection
+def network_info(name, network):
+    '''
+    rx_bytes
+    rx_packets
+    rx_errs
+    rx_drop
+    tx_bytes
+    tx_packets
+    tx_errs
+    tx_drop
+    '''
+    keys = ['rx_bytes', 'rx_packets', 'rx_errs', 'rx_drop',
+            'tx_bytes', 'tx_packets', 'tx_errs', 'tx_drop']
+    dom = lookupByName(name)
+    values = dom.interfaceStats(network)
+    info = dict(zip(keys, values))
+    return info
+
+
+@req_connection
 def send_key(name, key_code):
     ''' Sending linux key_code to the name vm
         key_code can be optained from linux_keys.py
