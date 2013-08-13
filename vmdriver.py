@@ -142,6 +142,13 @@ def save(name, path):
 
 
 @req_connection
+def restore(path):
+    '''Restore a saved virtual machine
+    from the memory image stored at path.'''
+    connection.restore(path)
+
+
+@req_connection
 def resume(name):
     '''Resume stopped virtual machines.
     '''
