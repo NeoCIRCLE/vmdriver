@@ -4,6 +4,7 @@ import libvirt
 import logging
 import os
 from decorator import decorator
+from vmcelery import celery
 
 connection = None
 
@@ -40,6 +41,7 @@ def req_connection(original_function, *args, **kw):
         return return_value
 
 
+@celery.task
 def connect(connection_string='qemu:///system'):
     '''Connect to the libvirt daemon specified in the
     connection_string or the local root.
@@ -52,6 +54,7 @@ def connect(connection_string='qemu:///system'):
         logging.error("There is already an active connection to libvirt.")
 
 
+@celery.task
 def disconnect():
     '''Disconnect from the active libvirt daemon connection.
     '''
@@ -64,6 +67,7 @@ def disconnect():
         connection = None
 
 
+@celery.task
 @req_connection
 def define(vm):
     '''Define permanent virtual machine from xml
@@ -72,6 +76,7 @@ def define(vm):
     logging.info("Virtual machine %s is defined from xml", vm.name)
 
 
+@celery.task
 @req_connection
 def create(vm):
     '''Create and start non-permanent virtual machine from xml
@@ -86,6 +91,7 @@ def create(vm):
     logging.info("Virtual machine %s is created from xml", vm.name)
 
 
+@celery.task
 @req_connection
 def delete(name):
     '''Destroy the running called 'name' virtual machine.
@@ -94,6 +100,7 @@ def delete(name):
     domain.destroy()
 
 
+@celery.task
 @req_connection
 def list_domains():
     '''
@@ -106,6 +113,7 @@ def list_domains():
     return domain_list
 
 
+@celery.task
 @req_connection
 def lookupByName(name):
     '''Return with the requested Domain
@@ -116,6 +124,7 @@ def lookupByName(name):
         logging.error(e.get_error_message())
 
 
+@celery.task
 @req_connection
 def undefine(name):
     '''Undefine an already defined virtual machine.
@@ -125,6 +134,7 @@ def undefine(name):
     domain.undefine()
 
 
+@celery.task
 @req_connection
 def start(name):
     '''Start an already defined virtual machine.
@@ -133,6 +143,7 @@ def start(name):
     domain.create()
 
 
+@celery.task
 @req_connection
 def save(name, path):
     '''Stop virtual machine and save its memory to path.
@@ -141,6 +152,7 @@ def save(name, path):
     domain.save(path)
 
 
+@celery.task
 @req_connection
 def restore(path):
     '''Restore a saved virtual machine
@@ -148,6 +160,7 @@ def restore(path):
     connection.restore(path)
 
 
+@celery.task
 @req_connection
 def resume(name):
     '''Resume stopped virtual machines.
@@ -156,6 +169,7 @@ def resume(name):
     domain.resume()
 
 
+@celery.task
 @req_connection
 def reset(name):
     '''Reset (power reset) virtual machine.
@@ -164,6 +178,7 @@ def reset(name):
     domain.reset()
 
 
+@celery.task
 @req_connection
 def reboot(name):
     '''Reboot (with guest acpi support) virtual machine.
@@ -172,6 +187,7 @@ def reboot(name):
     domain.reboot()
 
 
+@celery.task
 @req_connection
 def node_info():
     ''' Get info from Host as dict:
@@ -194,6 +210,7 @@ def node_info():
     return dict(zip(keys, values))
 
 
+@celery.task
 @req_connection
 def domain_info(name):
     '''
@@ -212,6 +229,7 @@ def domain_info(name):
     return info
 
 
+@celery.task
 @req_connection
 def network_info(name, network):
     '''
@@ -232,6 +250,7 @@ def network_info(name, network):
     return info
 
 
+@celery.task
 @req_connection
 def send_key(name, key_code):
     ''' Sending linux key_code to the name vm
@@ -247,6 +266,7 @@ def _stream_handler(stream, buf, opaque):
     os.write(fd, buf)
 
 
+@celery.task
 @req_connection
 def screenshot(name, path):
     """Save screenshot of virtual machine
@@ -275,6 +295,7 @@ def screenshot(name, path):
         os.close(fd)
 
 
+@celery.task
 @req_connection
 def migrate(name, host, live=False):
     '''Migrate domain to host'''
