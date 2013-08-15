@@ -112,7 +112,7 @@ def list_domains():
     domain_list = []
     for i in connection.listDomainsID():
         dom = connection.lookupByID(i)
-        domain_list += dom.name()
+        domain_list.append(dom.name())
     return domain_list
 
 
