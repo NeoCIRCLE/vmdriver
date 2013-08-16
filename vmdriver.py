@@ -25,6 +25,9 @@ state_dict = {0: 'NOSTATE',
 @decorator
 def req_connection(original_function, *args, **kw):
     '''Connection checking decorator for libvirt.
+
+       If envrionment variable LIBVIRT_KEEPALIVE is set
+       it will use the connection from the celery worker.
     '''
     logging.debug("Decorator running")
     global connection
@@ -50,12 +53,14 @@ def connect(connection_string='qemu:///system'):
     connection_string or the local root.
     '''
     global connection
-    if connection is None:
-        connection = libvirt.open(connection_string)
-        logging.debug("Connection estabilished to libvirt.")
+    if os.getenv('LIBVIRT_KEEPALIVE') is None:
+        if connection is None:
+            connection = libvirt.open(connection_string)
+            logging.debug("Connection estabilished to libvirt.")
+        else:
+            logging.debug("There is already an active connection to libvirt.")
     else:
-        logging.error("There is already an active connection to libvirt.")
-
+        connection = lib_connection
 
 @celery.task
 def disconnect():
