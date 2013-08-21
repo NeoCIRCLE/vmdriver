@@ -61,6 +61,7 @@ def connect(connection_string='qemu:///system'):
             logging.debug("There is already an active connection to libvirt.")
     else:
         connection = lib_connection
+        logging.debug("Using celery libvirt connection connection.")
 
 @celery.task
 def disconnect():
