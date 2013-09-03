@@ -5,7 +5,7 @@ import logging
 import os
 import sys
 from decorator import decorator
-from vmcelery import celery
+from vmcelery import celery, lib_connection
 
 sys.path.append(os.path.dirname(os.path.basename(__file__)))
 
@@ -62,6 +62,7 @@ def connect(connection_string='qemu:///system'):
     else:
         connection = lib_connection
         logging.debug("Using celery libvirt connection connection.")
+
 
 @celery.task
 def disconnect():

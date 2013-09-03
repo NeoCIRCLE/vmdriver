@@ -5,6 +5,8 @@ import os
 
 HOSTNAME = gethostname()
 
+lib_connection = None
+
 celery = Celery('vmcelery', backend='amqp',
                 broker='amqp://cloud:test@10.9.1.31/vmdriver',
                 include=['tasks'])
