@@ -68,6 +68,12 @@ class VMInstance:
         self.seclabel_type = seclabel_type
         self.seclabel_mode = seclabel_mode
 
+    @classmethod
+    def deserialize(cls, desc):
+        desc['disk_list'] = [VMDisk.deserialize(d) for d in desc['disk_list']]
+        desc['network_list'] = [VMNetwork.deserialize(n) for n in desc['network_list']]
+        return cls(**desc)
+
     def build_xml(self):
         '''Return the root Element Tree object
         '''
@@ -160,6 +166,10 @@ class VMDisk:
         self.driver_cache = driver_cache
         self.target_device = target_device
 
+    @classmethod
+    def deserialize(cls, desc):
+        return cls(**desc)
+
     def build_xml(self):
         xml_top = ET.Element('disk',
                              attrib={'type': self.disk_type,
@@ -233,6 +243,10 @@ class VMNetwork:
         self.QoS = QoS
         self.vlan = vlan
         self.managed = managed
+
+    @classmethod
+    def deserialize(cls, desc):
+        return cls(**desc)
 
     # XML dump
     def build_xml(self):
