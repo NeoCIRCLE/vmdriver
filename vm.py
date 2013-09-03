@@ -15,20 +15,19 @@ class VMInstance:
     network_list = list()
     disk_list = list()
     graphics = dict
-    context = dict
     raw_data = None
 
     def __init__(self,
                  name,
                  vcpu,
                  memory_max,
-                 cpu_share="100",
+                 memory=None,
+                 cpu_share=100,
                  arch="x86_64",
-                 os_boot="hd",
+                 boot_menu=False,
                  vm_type="kvm",
                  network_list=None,
                  disk_list=None,
-                 context=None,
                  graphics=None,
                  acpi=True,
                  raw_data=None,
@@ -38,13 +37,13 @@ class VMInstance:
         name    - unique name for the instance
         vcpu    - nubmer of processors
         memory_max  - maximum virtual memory (actual memory maybe add late)
+        memory
         cpu_share   - KVM process priority (0-100)
         arch        - libvirt arch parameter default x86_64
         os_boot     - boot device default hd
         vm_type     - hypervisor type default kvm
         network_list    - VMNetwork list
         disk_list   - VMDIsk list
-        context  -   Key-Value pars (not used)
         graphics    - Dict that keys are: type, listen, port, passwd
         acpi        - True/False to enable acpi
         seclabel_type - libvirt security label type
@@ -54,12 +53,15 @@ class VMInstance:
         self.vcpu = vcpu
         self.cpu_share = cpu_share
         self.memory_max = memory_max
+        if memory is None:
+            self.memory = memory_max
+        else:
+            self.memory = memory
         self.arch = arch
-        self.os_boot = os_boot
+        self.boot_menu = boot_menu
         self.vm_type = vm_type
         self.network_list = network_list
         self.disk_list = disk_list
-        self.conext = context
         self.graphics = graphics
         self.acpi = acpi
         self.raw_data = raw_data
@@ -78,15 +80,17 @@ class VMInstance:
             })
         # Basic virtual machine paramaters
         ET.SubElement(xml_top, 'name').text = self.name
-        ET.SubElement(xml_top, 'vcpu').text = self.vcpu
-        ET.SubElement(xml_top, 'memory').text = self.memory_max
+        ET.SubElement(xml_top, 'vcpu').text = str(self.vcpu)
+        ET.SubElement(xml_top, 'memory').text = str(self.memory_max)
+        ET.SubElement(xml_top, 'currentMemory').text = str(self.memory)
         # Cpu tune
         cputune = ET.SubElement(xml_top, 'cputune')
-        ET.SubElement(cputune, 'shares').text = self.cpu_share
+        ET.SubElement(cputune, 'shares').text = str(self.cpu_share)
         # Os specific options
         os = ET.SubElement(xml_top, 'os')
         ET.SubElement(os, 'type', attrib={'arch': self.arch}).text = "hvm"
-        ET.SubElement(os, 'boot', attrib={'dev': self.os_boot})
+        ET.SubElement(os, 'bootmenu', attrib={
+                      'enable': "yes" if self.boot_menu else "no"})
         # Devices
         devices = ET.SubElement(xml_top, 'devices')
         ET.SubElement(devices, 'emulator').text = '/usr/bin/kvm'
@@ -210,8 +214,8 @@ class VMNetwork:
 
     def __init__(self,
                  name,
-                 bridge,
                  mac,
+                 bridge="cloud",
                  ipv4=None,
                  ipv6=None,
                  network_type='ethernet',
