@@ -1,15 +1,17 @@
 from celery import Celery
 from kombu import Queue, Exchange
 from socket import gethostname
-import os
+from os import getenv
 
 HOSTNAME = gethostname()
+AMQP_URI = getenv('AMQP_URI')
+
 
 lib_connection = None
 
 celery = Celery('vmcelery', backend='amqp',
-                broker='amqp://cloud:test@10.9.1.31/vmdriver',
-                include=['tasks'])
+                broker=AMQP_URI,
+                include=['vmdriver'])
 
 celery.conf.update(
     CELERY_QUEUES=(
@@ -18,6 +20,6 @@ celery.conf.update(
     )
 )
 
-if os.getenv('LIBVIRT_KEEPALIVE') is not None:
+if getenv('LIBVIRT_KEEPALIVE') is not None:
     import libvirt
-    lib_connection = libvirt.open(os.getenv('LIBVIRT_URI'))
+    lib_connection = libvirt.open(getenv('LIBVIRT_URI'))
