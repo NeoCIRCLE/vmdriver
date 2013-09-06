@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 import lxml.etree as ET
 
 # VM Instance class
