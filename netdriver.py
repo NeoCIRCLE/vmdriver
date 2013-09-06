@@ -1,7 +1,7 @@
-#!/usr/bin/env python
-
 import subprocess
 import logging
+
+from netcelery import celery
 
 
 def ovs_command_execute(command):
@@ -24,11 +24,13 @@ def ofctl_command_execute(command):
     return return_val
 
 
+@celery.task
 def create(network_list):
     for network in network_list:
         port_create(network)
 
 
+@celery.task
 def delete(network_list):
     for network in network_list:
         port_delete(network)
