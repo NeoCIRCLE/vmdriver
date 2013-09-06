@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 import libvirt
 import logging
 import os
@@ -69,12 +67,15 @@ def disconnect():
     '''Disconnect from the active libvirt daemon connection.
     '''
     global connection
-    if connection is None:
-        logging.debug('There is no available libvirt conection.')
+    if os.getenv('LIBVIRT_KEEPALIVE') is None:
+        if connection is None:
+            logging.debug('There is no available libvirt conection.')
+        else:
+            connection.close()
+            logging.debug('Connection closed to libvirt.')
+            connection = None
     else:
-        connection.close()
-        logging.debug('Connection closed to libvirt.')
-        connection = None
+        logging.debug('Keepalive connection should not close.')
 
 
 @celery.task
