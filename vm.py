@@ -20,6 +20,7 @@ class VMInstance:
                  name,
                  vcpu,
                  memory_max,
+                 emulator='/usr/bin/kvm',
                  memory=None,
                  cpu_share=100,
                  arch="x86_64",
@@ -49,6 +50,7 @@ class VMInstance:
         seclabel_mode - libvirt security mode (selinux, apparmor)
         '''
         self.name = name
+        self.emulator = emulator
         self.vcpu = vcpu
         self.cpu_share = cpu_share
         self.memory_max = memory_max
@@ -70,7 +72,8 @@ class VMInstance:
     @classmethod
     def deserialize(cls, desc):
         desc['disk_list'] = [VMDisk.deserialize(d) for d in desc['disk_list']]
-        desc['network_list'] = [VMNetwork.deserialize(n) for n in desc['network_list']]
+        desc['network_list'] = [VMNetwork.deserialize(
+            n) for n in desc['network_list']]
         return cls(**desc)
 
     def build_xml(self):
@@ -98,7 +101,7 @@ class VMInstance:
                       'enable': "yes" if self.boot_menu else "no"})
         # Devices
         devices = ET.SubElement(xml_top, 'devices')
-        ET.SubElement(devices, 'emulator').text = '/usr/bin/kvm'
+        ET.SubElement(devices, 'emulator').text = self.emulator
         for disk in self.disk_list:
             devices.append(disk.build_xml())
         for network in self.network_list:
