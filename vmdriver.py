@@ -2,6 +2,7 @@ import libvirt
 import logging
 import os
 import sys
+from vm import VMInstance
 from decorator import decorator
 from vmcelery import celery, lib_connection
 
@@ -89,7 +90,7 @@ def define(vm):
 
 @celery.task
 @req_connection
-def create(vm):
+def create(vm_desc):
     '''Create and start non-permanent virtual machine from xml
     flags can be:
         VIR_DOMAIN_NONE = 0
@@ -98,7 +99,10 @@ def create(vm):
         VIR_DOMAIN_START_BYPASS_CACHE = 4
         VIR_DOMAIN_START_FORCE_BOOT = 8
     '''
-    connection.createXML(vm.dump_xml(), libvirt.VIR_DOMAIN_START_PAUSED)
+    vm = VMInstance.deserialize(vm_desc)
+    # Setting proper hypervisor
+    vm.vm_type = os.getenv(HYPERVISOR_TYPE,"test")
+    connection.createXML(vm.dump_xml(), libvirt.VIR_DOMAIN_NONE)#, libvirt.VIR_DOMAIN_START_PAUSED)
     logging.info("Virtual machine %s is created from xml", vm.name)
 
 
