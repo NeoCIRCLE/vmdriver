@@ -25,12 +25,12 @@ class VMInstance:
                  cpu_share=100,
                  arch="x86_64",
                  boot_menu=False,
-                 vm_type="kvm",
+                 vm_type="test",
                  network_list=None,
                  disk_list=None,
                  graphics=None,
                  acpi=True,
-                 raw_data=None,
+                 raw_data="",
                  seclabel_type="dynamic",
                  seclabel_mode="apparmor"):
         '''Default Virtual Machine constructor
@@ -113,7 +113,7 @@ class VMInstance:
                           attrib={
                               'type': self.graphics['type'],
                               'listen': self.graphics['listen'],
-                              'port': self.graphics['port'],
+                              'port': str(self.graphics['port']),
                               'passwd': self.graphics['passwd'],
                           })
         # Features (TODO: features as list)
@@ -121,7 +121,7 @@ class VMInstance:
         if self.acpi:
             ET.SubElement(features, 'acpi')
         # Building raw data into xml
-        if self.raw_data is not None:
+        if self.raw_data:
             xml_top.append(ET.fromstring(self.raw_data))
         # Security label
         ET.SubElement(xml_top, 'seclabel', attrib={
@@ -151,7 +151,6 @@ class VMDisk:
     target_device = None
 
     def __init__(self,
-                 name,
                  source,
                  disk_type="file",
                  disk_device="disk",
@@ -159,7 +158,6 @@ class VMDisk:
                  driver_type="qcow2",
                  driver_cache="none",
                  target_device="vda"):
-        self.name = name
         self.source = source
         self.disk_type = disk_type
         self.disk_device = disk_device
