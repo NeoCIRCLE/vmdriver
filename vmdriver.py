@@ -101,8 +101,17 @@ def create(vm_desc):
     '''
     vm = VMInstance.deserialize(vm_desc)
     # Setting proper hypervisor
-    vm.vm_type = os.getenv(HYPERVISOR_TYPE,"test")
-    connection.createXML(vm.dump_xml(), libvirt.VIR_DOMAIN_NONE)#, libvirt.VIR_DOMAIN_START_PAUSED)
+    vm.vm_type = os.getenv("HYPERVISOR_TYPE", "test")
+    # Emulating DOMAIN_START_PAUSED FLAG behaviour on test driver
+    if vm.vm_type == "test":
+        connection.createXML(
+            vm.dump_xml(), libvirt.VIR_DOMAIN_NONE)
+        domain = connection.lookupByName(vm.name)
+        domain.suspend()
+
+    else:
+        connection.createXML(vm.dump_xml(), libvirt.VIR_DOMAIN_START_PAUSED)
+
     logging.info("Virtual machine %s is created from xml", vm.name)
 
 
@@ -156,6 +165,15 @@ def start(name):
     '''
     domain = lookupByName(name)
     domain.create()
+
+
+@celery.task
+@req_connection
+def suspend(name):
+    '''Stop virtual machine and save its memory to path.
+    '''
+    domain = lookupByName(name)
+    domain.suspend()
 
 
 @celery.task
