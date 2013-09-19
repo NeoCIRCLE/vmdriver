@@ -117,6 +117,15 @@ def create(vm_desc):
 
 @celery.task
 @req_connection
+def shutdown(name):
+    '''Shutdown virtual machine (need ACPI support).
+    '''
+    domain = lookupByName(name)
+    domain.shutdown()
+
+
+@celery.task
+@req_connection
 def delete(name):
     '''Destroy the running called 'name' virtual machine.
     '''
