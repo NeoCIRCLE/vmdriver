@@ -49,8 +49,9 @@ def req_connection(original_function, *args, **kw):
 @decorator
 def wrap_libvirtError(original_function, *args, **kw):
     try:
-        original_function(*args, **kw)
+        return original_function(*args, **kw)
     except libvirt.libvirtError as e:
+        logging.error(e.get_error_message())
         new_e = Exception(e.get_error_message())
         new_e.libvirtError = True
         raise new_e
@@ -120,7 +121,7 @@ def create(vm_desc):
     if vm.vm_type == "test":
         connection.createXML(
             vm.dump_xml(), libvirt.VIR_DOMAIN_NONE)
-        domain = connection.lookupByName(vm.name)
+        domain = lookupByName(vm.name)
         domain.suspend()
     # Real driver create
     else:
@@ -169,10 +170,7 @@ def list_domains():
 def lookupByName(name):
     '''Return with the requested Domain
     '''
-    try:
-        return connection.lookupByName(name)
-    except libvirt.libvirtError as e:
-        logging.error(e.get_error_message())
+    return connection.lookupByName(name)
 
 
 @celery.task
