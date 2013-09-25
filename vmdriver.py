@@ -46,7 +46,18 @@ def req_connection(original_function, *args, **kw):
         return return_value
 
 
+@decorator
+def wrap_libvirtError(original_function, *args, **kw):
+    try:
+        original_function(*args, **kw)
+    except libvirt.libvirtError as e:
+        new_e = Exception(e.get_error_message())
+        new_e.libvirtError = True
+        raise new_e
+
+
 @celery.task
+@wrap_libvirtError
 def connect(connection_string='qemu:///system'):
     '''Connect to the libvirt daemon specified in the
     connection_string or the local root.
@@ -64,6 +75,7 @@ def connect(connection_string='qemu:///system'):
 
 
 @celery.task
+@wrap_libvirtError
 def disconnect():
     '''Disconnect from the active libvirt daemon connection.
     '''
@@ -81,6 +93,7 @@ def disconnect():
 
 @celery.task
 @req_connection
+@wrap_libvirtError
 def define(vm):
     '''Define permanent virtual machine from xml
     '''
@@ -90,6 +103,7 @@ def define(vm):
 
 @celery.task
 @req_connection
+@wrap_libvirtError
 def create(vm_desc):
     '''Create and start non-permanent virtual machine from xml
     flags can be:
@@ -108,15 +122,16 @@ def create(vm_desc):
             vm.dump_xml(), libvirt.VIR_DOMAIN_NONE)
         domain = connection.lookupByName(vm.name)
         domain.suspend()
-
+    # Real driver create
     else:
-        connection.createXML(vm.dump_xml(), libvirt.VIR_DOMAIN_START_PAUSED)
-
-    logging.info("Virtual machine %s is created from xml", vm.name)
+            connection.createXML(
+                vm.dump_xml(), libvirt.VIR_DOMAIN_START_PAUSED)
+            logging.info("Virtual machine %s is created from xml", vm.name)
 
 
 @celery.task
 @req_connection
+@wrap_libvirtError
 def shutdown(name):
     '''Shutdown virtual machine (need ACPI support).
     '''
@@ -126,6 +141,7 @@ def shutdown(name):
 
 @celery.task
 @req_connection
+@wrap_libvirtError
 def delete(name):
     '''Destroy the running called 'name' virtual machine.
     '''
@@ -135,6 +151,7 @@ def delete(name):
 
 @celery.task
 @req_connection
+@wrap_libvirtError
 def list_domains():
     '''
     :return list: List of domains name in host
@@ -148,6 +165,7 @@ def list_domains():
 
 @celery.task
 @req_connection
+@wrap_libvirtError
 def lookupByName(name):
     '''Return with the requested Domain
     '''
@@ -159,6 +177,7 @@ def lookupByName(name):
 
 @celery.task
 @req_connection
+@wrap_libvirtError
 def undefine(name):
     '''Undefine an already defined virtual machine.
     If it's running it becomes transient (lsot on reboot)
@@ -169,6 +188,7 @@ def undefine(name):
 
 @celery.task
 @req_connection
+@wrap_libvirtError
 def start(name):
     '''Start an already defined virtual machine.
     '''
@@ -178,6 +198,7 @@ def start(name):
 
 @celery.task
 @req_connection
+@wrap_libvirtError
 def suspend(name):
     '''Stop virtual machine and save its memory to path.
     '''
@@ -187,6 +208,7 @@ def suspend(name):
 
 @celery.task
 @req_connection
+@wrap_libvirtError
 def save(name, path):
     '''Stop virtual machine and save its memory to path.
     '''
@@ -196,6 +218,7 @@ def save(name, path):
 
 @celery.task
 @req_connection
+@wrap_libvirtError
 def restore(path):
     '''Restore a saved virtual machine
     from the memory image stored at path.'''
@@ -204,6 +227,7 @@ def restore(path):
 
 @celery.task
 @req_connection
+@wrap_libvirtError
 def resume(name):
     '''Resume stopped virtual machines.
     '''
@@ -213,6 +237,7 @@ def resume(name):
 
 @celery.task
 @req_connection
+@wrap_libvirtError
 def reset(name):
     '''Reset (power reset) virtual machine.
     '''
@@ -222,6 +247,7 @@ def reset(name):
 
 @celery.task
 @req_connection
+@wrap_libvirtError
 def reboot(name):
     '''Reboot (with guest acpi support) virtual machine.
     '''
@@ -231,6 +257,7 @@ def reboot(name):
 
 @celery.task
 @req_connection
+@wrap_libvirtError
 def node_info():
     ''' Get info from Host as dict:
     model   string indicating the CPU model
@@ -254,6 +281,7 @@ def node_info():
 
 @celery.task
 @req_connection
+@wrap_libvirtError
 def domain_info(name):
     '''
     state   the running state, one of virDomainState
@@ -273,6 +301,7 @@ def domain_info(name):
 
 @celery.task
 @req_connection
+@wrap_libvirtError
 def network_info(name, network):
     '''
     rx_bytes
@@ -294,6 +323,7 @@ def network_info(name, network):
 
 @celery.task
 @req_connection
+@wrap_libvirtError
 def send_key(name, key_code):
     ''' Sending linux key_code to the name vm
         key_code can be optained from linux_keys.py
@@ -310,6 +340,7 @@ def _stream_handler(stream, buf, opaque):
 
 @celery.task
 @req_connection
+@wrap_libvirtError
 def screenshot(name, path):
     """Save screenshot of virtual machine
         to the path as name-screenshot.ppm
@@ -339,6 +370,7 @@ def screenshot(name, path):
 
 @celery.task
 @req_connection
+@wrap_libvirtError
 def migrate(name, host, live=False):
     '''Migrate domain to host'''
     flags = libvirt.VIR_MIGRATE_PEER2PEER
@@ -350,4 +382,3 @@ def migrate(name, host, live=False):
         flags=flags,
         dname=name,
         bandwidth=0)
-# virDomainResume
