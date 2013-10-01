@@ -2,6 +2,32 @@ import subprocess
 import logging
 
 from netcelery import celery
+from os import getenv
+from vm import VMNetwork
+
+driver = getenv("HYPERVISOR_TYPE", "test")
+
+
+@celery.task
+def create(network):
+        port_create(VMNetwork.deserialize(network))
+
+
+@celery.task
+def delete(network):
+        port_delete(VMNetwork.deserialize(network))
+
+
+def add_tuntap_interface(if_name):
+    '''For testing purpose only adding tuntap interface.
+    '''
+    subprocess.call(['sudo', 'ip', 'tuntap', 'add', 'mode', 'tap', if_name])
+
+
+def del_tuntap_interface(if_name):
+    '''For testing purpose only deleting tuntap interface.
+    '''
+    subprocess.call(['sudo', 'ip', 'tuntap', 'del', 'mode', 'tap', if_name])
 
 
 def ovs_command_execute(command):
@@ -22,18 +48,6 @@ def ofctl_command_execute(command):
     return_val = subprocess.call(command)
     logging.info('OVS flow command: %s executed.', command)
     return return_val
-
-
-@celery.task
-def create(network_list):
-    for network in network_list:
-        port_create(network)
-
-
-@celery.task
-def delete(network_list):
-    for network in network_list:
-        port_delete(network)
 
 
 def build_flow_rule(
@@ -90,6 +104,16 @@ def add_port_to_bridge(network_name, bridge):
 
 def del_port_from_bridge(network_name):
     ovs_command_execute(['del-port', network_name])
+
+
+def mac_filter(network, port_number, delete=False):
+    if not delete:
+        flow_cmd = build_flow_rule(in_port=port_number, dl_src=network.mac,
+                                   priority="40000", actions="normal")
+        ofctl_command_execute(["add-flow", network.bridge, flow_cmd])
+    else:
+        flow_cmd = build_flow_rule(in_port=port_number, dl_src=network.mac)
+        ofctl_command_execute(["del-flows", network.bridge, flow_cmd])
 
 
 def ban_dhcp_server(network, port_number, delete=False):
@@ -155,7 +179,7 @@ def enable_dhcp_client(network, port_number, delete=False):
 def disable_all_not_allowed_trafic(network, port_number, delete=False):
     if not delete:
         flow_cmd = build_flow_rule(in_port=port_number,
-                                   priority="39000", actions="drop")
+                                   priority="30000", actions="drop")
         ofctl_command_execute(["add-flow", network.bridge, flow_cmd])
     else:
         flow_cmd = build_flow_rule(in_port=port_number)
@@ -163,8 +187,12 @@ def disable_all_not_allowed_trafic(network, port_number, delete=False):
 
 
 def port_create(network):
+    ''' Adding port to bridge apply rules and pull up interface.
     '''
-    '''
+    # For testing purpose create tuntap iface
+    if driver == "test":
+        add_tuntap_interface(network.name)
+
     # Create the port for virtual network
     add_port_to_bridge(network.name, network.bridge)
     # Set VLAN parameter for tap interface
@@ -175,12 +203,18 @@ def port_create(network):
 
     # Set Flow rules to avoid mac or IP spoofing
     if network.managed:
+        # Allow traffic from fource MAC and IP
         ban_dhcp_server(network, port_number)
         ipv4_filter(network, port_number)
         ipv6_filter(network, port_number)
         arp_filter(network, port_number)
         enable_dhcp_client(network, port_number)
-        disable_all_not_allowed_trafic(network, port_number)
+    else:
+        # Allow all traffic from source MAC address
+        mac_filter(network, port_number)
+    # Explicit deny all other traffic
+    disable_all_not_allowed_trafic(network, port_number)
+    pull_up_interface(network)
 
 
 def port_delete(network):
@@ -200,6 +234,10 @@ def port_delete(network):
 
     # Delete port
     del_port_from_bridge(network.name)
+
+    # For testing purpose dele tuntap iface
+    if driver == "test":
+        del_tuntap_interface(network.name)
 
 
 def pull_up_interface(network):
