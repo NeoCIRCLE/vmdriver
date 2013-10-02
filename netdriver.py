@@ -230,7 +230,10 @@ def port_delete(network):
         ipv6_filter(network, port_number, delete=True)
         arp_filter(network, port_number, delete=True)
         enable_dhcp_client(network, port_number, delete=True)
-        disable_all_not_allowed_trafic(network, port_number, delete=True)
+    else:
+        mac_filter(network, port_number, delete=True)
+    # Explicit deny all other traffic
+    disable_all_not_allowed_trafic(network, port_number, delete=True)
 
     # Delete port
     del_port_from_bridge(network.name)
@@ -241,7 +244,7 @@ def port_delete(network):
 
 
 def pull_up_interface(network):
-    command = ['sudo', 'ip', 'link', 'set', 'up', network]
+    command = ['sudo', 'ip', 'link', 'set', 'up', network.name]
     return_val = subprocess.call(command)
     logging.info('IP command: %s executed.', command)
     return return_val
