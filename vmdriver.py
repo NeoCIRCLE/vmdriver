@@ -221,7 +221,7 @@ def save(name, path):
 @celery.task
 @req_connection
 @wrap_libvirtError
-def restore(path, name):
+def restore(name, path):
     '''Restore a saved virtual machine
     from the memory image stored at path.'''
     connection.restore(path)
