@@ -128,6 +128,7 @@ def create(vm_desc):
             connection.createXML(
                 vm.dump_xml(), libvirt.VIR_DOMAIN_START_PAUSED)
             logging.info("Virtual machine %s is created from xml", vm.name)
+    return domain_info(vm.name)
 
 
 @celery.task
@@ -138,6 +139,7 @@ def shutdown(name):
     '''
     domain = lookupByName(name)
     domain.shutdown()
+    return _parse_info(domain.info())
 
 
 @celery.task
@@ -148,6 +150,7 @@ def delete(name):
     '''
     domain = lookupByName(name)
     domain.destroy()
+    return _parse_info(domain.info())
 
 
 @celery.task
@@ -198,10 +201,11 @@ def start(name):
 @req_connection
 @wrap_libvirtError
 def suspend(name):
-    '''Stop virtual machine and save its memory to path.
+    '''Stop virtual machine and keep memory in RAM.
     '''
     domain = lookupByName(name)
     domain.suspend()
+    return _parse_info(domain.info())
 
 
 @celery.task
@@ -217,10 +221,11 @@ def save(name, path):
 @celery.task
 @req_connection
 @wrap_libvirtError
-def restore(path):
+def restore(path, name):
     '''Restore a saved virtual machine
     from the memory image stored at path.'''
     connection.restore(path)
+    return domain_info(name)
 
 
 @celery.task
@@ -231,6 +236,7 @@ def resume(name):
     '''
     domain = lookupByName(name)
     domain.resume()
+    return _parse_info(domain.info())
 
 
 @celery.task
@@ -241,6 +247,7 @@ def reset(name):
     '''
     domain = lookupByName(name)
     domain.reset()
+    return _parse_info(domain.info())
 
 
 @celery.task
@@ -251,6 +258,7 @@ def reboot(name):
     '''
     domain = lookupByName(name)
     domain.reboot()
+    return _parse_info(domain.info())
 
 
 @celery.task
@@ -277,6 +285,15 @@ def node_info():
     return dict(zip(keys, values))
 
 
+def _parse_info(values):
+    '''Parse libvirt domain info into dict'''
+    keys = ['state', 'maxmem', 'memory', 'virtcpunum', 'cputime']
+    info = dict(zip(keys, values))
+    # Change state to proper ENUM
+    info['state'] = state_dict[info['state']]
+    return info
+
+
 @celery.task
 @req_connection
 @wrap_libvirtError
@@ -288,13 +305,8 @@ def domain_info(name):
     virtcpunum    the number of virtual CPUs for the domain
     cputime    the CPU time used in nanoseconds
     '''
-    keys = ['state', 'maxmem', 'memory', 'virtcpunum', 'cputime']
     dom = lookupByName(name)
-    values = dom.info()
-    # Change state to proper ENUM
-    info = dict(zip(keys, values))
-    info['state'] = state_dict[info['state']]
-    return info
+    return _parse_info(dom.info())
 
 
 @celery.task
@@ -380,3 +392,4 @@ def migrate(name, host, live=False):
         flags=flags,
         dname=name,
         bandwidth=0)
+    #return _parse_info(domain.info())
