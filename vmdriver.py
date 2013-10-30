@@ -188,7 +188,7 @@ def create(vm_desc):
     return domain_info(vm.name)
 
 
-@celery.task
+@celery.task(time_limit=120)
 @req_connection
 def shutdown(name):
     """ Shutdown virtual machine (need ACPI support).
