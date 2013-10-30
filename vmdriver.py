@@ -7,7 +7,7 @@ import socket
 import json
 from decorator import decorator
 
-from psutil import NUM_CPUS, virtual_memory, virtmem_usage, cpu_percent
+from psutil import NUM_CPUS, virtual_memory, cpu_percent
 
 
 from vm import VMInstance
@@ -190,12 +190,28 @@ def create(vm_desc):
 
 @celery.task
 @req_connection
-@wrap_libvirtError
 def shutdown(name):
-    """ Shutdown virtual machine (need ACPI support). """
-
-    domain = lookupByName(name)
-    domain.shutdown()
+    """ Shutdown virtual machine (need ACPI support).
+    Return When domain is missing.
+    """
+    from time import sleep
+    try:
+        domain = lookupByName(name)
+        domain.shutdown()
+        while True:
+            try:
+                Connection.get().lookupByName(name)
+            except Exception as e:
+                if e.get_error_code() == libvirt.VIR_ERR_NO_DOMAIN:
+                    return
+                else:
+                    raise
+            else:
+                sleep(5)
+    except Exception as e:
+        new_e = Exception(e.get_error_message())
+        new_e.libvirtError = True
+        raise new_e
 
 
 @celery.task
