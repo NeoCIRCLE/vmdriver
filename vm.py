@@ -19,9 +19,9 @@ class VMInstance:
     def __init__(self,
                  name,
                  vcpu,
-                 memory_max,
-                 emulator='/usr/bin/kvm',
+		         memory_max,
                  memory=None,
+                 emulator='/usr/bin/kvm',
                  cpu_share=100,
                  arch="x86_64",
                  boot_menu=False,
@@ -31,6 +31,7 @@ class VMInstance:
                  graphics=None,
                  acpi=True,
                  raw_data="",
+                 boot_token="",
                  seclabel_type="dynamic",
                  seclabel_mode="apparmor"):
         '''Default Virtual Machine constructor
@@ -114,8 +115,13 @@ class VMInstance:
                               'type': self.graphics['type'],
                               'listen': self.graphics['listen'],
                               'port': str(self.graphics['port']),
-                              'passwd': self.graphics['passwd'],
+                              #'passwd': self.graphics['passwd'], TODO: Add this as option
                           })
+            ET.SubElement(devices,
+                          'input',
+                          attrib={
+                              'type': 'tablet',
+                              'bus': 'usb',})
         # Features (TODO: features as list)
         features = ET.SubElement(xml_top, 'features')
         if self.acpi:
