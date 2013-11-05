@@ -117,10 +117,12 @@ def create(vm_desc):
     vm = VMInstance.deserialize(vm_desc)
     # Setting proper hypervisor
     vm.vm_type = os.getenv("HYPERVISOR_TYPE", "test")
+    xml = vm.dump_xml()
+    logging.info(xml)
     # Emulating DOMAIN_START_PAUSED FLAG behaviour on test driver
     if vm.vm_type == "test":
         connection.createXML(
-            vm.dump_xml(), libvirt.VIR_DOMAIN_NONE)
+            xml, libvirt.VIR_DOMAIN_NONE)
         domain = lookupByName(vm.name)
         domain.suspend()
     # Real driver create
@@ -150,7 +152,6 @@ def delete(name):
     '''
     domain = lookupByName(name)
     domain.destroy()
-    return _parse_info(domain.info())
 
 
 @celery.task
