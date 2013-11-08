@@ -33,14 +33,14 @@ Clone the git repository::
 Set up virtualenv profile::
 
   $ source /etc/bash_completion.d/virtualenvwrapper
-  $ mkvirtualenv circle
+  $ mkvirtualenv vmdriver
 
 Save configuration to virtualenv and activate environment::
 
   $ cat >>/home/cloud/.virtualenvs/vmdriver/bin/postactivate <<END
   export LIBVIRT_KEEPALIVE=True
   export LIBVIRT_URI=test:///default
-  export AMQP_URI=amqp://user:pass@host/virtualserver
+  export AMQP_URI=amqp://cloud:password@host/circle
   export HYPERVISOR_TYPE=test 
   END
 
@@ -58,6 +58,7 @@ Copy the upstart scripts for celery services::
   $ sudo cp miscellaneous/netcelery.conf /etc/init/
 
 Start celery daemons::
+
   $ sudo start vmcelery
   $ sudo start netcelery
 
