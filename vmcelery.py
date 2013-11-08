@@ -1,7 +1,9 @@
+""" Celery module for libvirt RPC calls. """
 from celery import Celery
 from kombu import Queue, Exchange
 from socket import gethostname
 from os import getenv
+
 
 HOSTNAME = gethostname()
 AMQP_URI = getenv('AMQP_URI')
