@@ -19,7 +19,7 @@ class VMInstance:
     def __init__(self,
                  name,
                  vcpu,
-		         memory_max,
+                 memory_max,
                  memory=None,
                  emulator='/usr/bin/kvm',
                  cpu_share=100,
@@ -115,13 +115,14 @@ class VMInstance:
                               'type': self.graphics['type'],
                               'listen': self.graphics['listen'],
                               'port': str(self.graphics['port']),
-                              #'passwd': self.graphics['passwd'], TODO: Add this as option
+                              # 'passwd': self.graphics['passwd'],
+                              # TODO: Add this as option
                           })
             ET.SubElement(devices,
                           'input',
                           attrib={
                               'type': 'tablet',
-                              'bus': 'usb',})
+                              'bus': 'usb', })
         # Features (TODO: features as list)
         features = ET.SubElement(xml_top, 'features')
         if self.acpi:
