@@ -21,7 +21,7 @@ state_dict = {0: 'NOSTATE',
               }
 
 
-#class Singleton(type):
+# class Singleton(type):
 #
 #    """ Singleton class."""
 #
@@ -97,7 +97,6 @@ def wrap_libvirtError(original_function, *args, **kw):
         raise new_e
 
 
-@celery.task
 @wrap_libvirtError
 def connect(connection_string='qemu:///system'):
     """ Connect to the libvirt daemon.
@@ -117,7 +116,6 @@ def connect(connection_string='qemu:///system'):
         logging.debug("Using celery libvirt connection connection.")
 
 
-@celery.task
 @wrap_libvirtError
 def disconnect():
     """ Disconnect from the active libvirt daemon connection."""
@@ -449,7 +447,7 @@ def screenshot(name, path):
     stream = Connection.get().newStream(0)
     # Take screenshot accessible by stream (return mimetype)
     domain.screenshot(stream, 0, 0)
-    # Get file to save data (TODO: send on AMQP?)
+    # Get file to save data (send on AMQP?)
     try:
         fd = os.open(path + "/" + name + "-screenshot.ppm",
                      os.O_WRONLY | os.O_TRUNC | os.O_CREAT, 0o644)
