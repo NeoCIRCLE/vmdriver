@@ -22,7 +22,30 @@ Update package list and install the required softwares::
 Configuring network
 -------------------
 Configure Open vSwitch bridge that handle vitual connections::
+
   $ sudo ovs-vsctl add-br cloud
+
+Enable passwordless Open vSwitch commands::
+
+  $ TODO
+
+Configuring the libvirt daemon
+------------------------------
+Change the libvirt default settings in */etc/libvirt/qemu.conf*::
+
+  $ clear_emulator_capabilities = 0
+  $ user = root
+  $ group = root
+  $ cgroup_device_acl = [
+  "/dev/null", "/dev/full", "/dev/zero",
+  "/dev/random", "/dev/urandom",
+  "/dev/ptmx", "/dev/kvm", "/dev/kqemu",
+  "/dev/rtc", "/dev/hpet", "/dev/net/tun",
+  ]
+
+Setting up SSL certificates for migrations::
+
+  $ TODO
 
 Installing CIRCLE vmdriver
 --------------------------
