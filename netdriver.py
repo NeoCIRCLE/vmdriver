@@ -1,3 +1,4 @@
+""" CIRCLE driver for Open vSwitch. """
 import subprocess
 import logging
 
@@ -10,30 +11,33 @@ driver = getenv("HYPERVISOR_TYPE", "test")
 
 @celery.task
 def create(network):
-        port_create(VMNetwork.deserialize(network))
+    """ Create a network port. """
+    port_create(VMNetwork.deserialize(network))
 
 
 @celery.task
 def delete(network):
-        port_delete(VMNetwork.deserialize(network))
+    """ Delete a network port. """
+    port_delete(VMNetwork.deserialize(network))
 
 
 def add_tuntap_interface(if_name):
-    '''For testing purpose only adding tuntap interface.
-    '''
+    """ For testing purpose only adding tuntap interface. """
     subprocess.call(['sudo', 'ip', 'tuntap', 'add', 'mode', 'tap', if_name])
 
 
 def del_tuntap_interface(if_name):
-    '''For testing purpose only deleting tuntap interface.
-    '''
+    """ For testing purpose only deleting tuntap interface. """
     subprocess.call(['sudo', 'ip', 'tuntap', 'del', 'mode', 'tap', if_name])
 
 
 def ovs_command_execute(command):
-    '''Execute OpenVSwitch commands
+    """ Execute OpenVSwitch commands.
+
     command -   List of strings
-    '''
+    return  -   Command output
+
+    """
     command = ['sudo', 'ovs-vsctl'] + command
     return_val = subprocess.call(command)
     logging.info('OVS command: %s executed.', command)
@@ -41,9 +45,12 @@ def ovs_command_execute(command):
 
 
 def ofctl_command_execute(command):
-    '''Execute OpenVSwitch flow commands
+    """ Execute OpenVSwitch flow commands.
+
     command -   List of strings
-    '''
+    return  -   Command output
+
+    """
     command = ['sudo', 'ovs-ofctl'] + command
     return_val = subprocess.call(command)
     logging.info('OVS flow command: %s executed.', command)
@@ -59,7 +66,9 @@ def build_flow_rule(
         tp_dst=None,
         priority=None,
         actions=None):
-    '''
+    """
+    Generate flow rule from the parameters.
+
     in_port     - Interface flow-port number
     dl_src      - Source mac addsress (virtual interface)
     protocol    - Protocol for the rule like ip,ipv6,arp,udp,tcp
@@ -68,7 +77,10 @@ def build_flow_rule(
     tp_dst      - Destination port
     priority    - Rule priority
     actions     - Action for the matching rule
-    '''
+
+    return - Open vSwitch compatible flow rule.
+
+    """
     flow_rule = ""
     if in_port is None:
         raise AttributeError("Parameter in_port is mandantory")
@@ -85,29 +97,31 @@ def build_flow_rule(
     # Generate rule string with comas, except the last item
     for i in rule[:-1]:
         flow_rule += i + ","
-    else:
-        flow_rule += rule[-1]
+    flow_rule += rule[-1]
     return flow_rule
 
 
 def set_port_vlan(network_name, vlan):
-    ''' Setting vlan for interface named net_name
-    '''
+    """ Setting vlan for interface named net_name. """
+
     cmd_list = ['set', 'Port', network_name, 'tag=' + str(vlan)]
     ovs_command_execute(cmd_list)
 
 
 def add_port_to_bridge(network_name, bridge):
+    """ Add bridge to network_name. """
     cmd_list = ['add-port', bridge, network_name]
     ovs_command_execute(cmd_list)
 
 
 def del_port_from_bridge(network_name):
+    """ Delete network_name port. """
     ovs_command_execute(['del-port', network_name])
 
 
-def mac_filter(network, port_number, delete=False):
-    if not delete:
+def mac_filter(network, port_number, remove=False):
+    """ Apply/Remove mac filtering rule for network. """
+    if not remove:
         flow_cmd = build_flow_rule(in_port=port_number, dl_src=network.mac,
                                    priority="40000", actions="normal")
         ofctl_command_execute(["add-flow", network.bridge, flow_cmd])
@@ -116,8 +130,9 @@ def mac_filter(network, port_number, delete=False):
         ofctl_command_execute(["del-flows", network.bridge, flow_cmd])
 
 
-def ban_dhcp_server(network, port_number, delete=False):
-    if not delete:
+def ban_dhcp_server(network, port_number, remove=False):
+    """ Apply/Remove dhcp-server ban rule to network. """
+    if not remove:
         flow_cmd = build_flow_rule(in_port=port_number, dl_src=network.mac,
                                    protocol="udp", tp_dst="68",
                                    priority="43000", actions="drop")
@@ -128,8 +143,9 @@ def ban_dhcp_server(network, port_number, delete=False):
         ofctl_command_execute(["del-flows", network.bridge, flow_cmd])
 
 
-def ipv4_filter(network, port_number, delete=False):
-    if not delete:
+def ipv4_filter(network, port_number, remove=False):
+    """ Apply/Remove ipv4 filter rule to network.  """
+    if not remove:
         flow_cmd = build_flow_rule(in_port=port_number, dl_src=network.mac,
                                    protocol="ip", nw_src=network.ipv4,
                                    priority=42000, actions="normal")
@@ -140,8 +156,9 @@ def ipv4_filter(network, port_number, delete=False):
         ofctl_command_execute(["del-flows", network.bridge, flow_cmd])
 
 
-def ipv6_filter(network, port_number, delete=False):
-    if not delete:
+def ipv6_filter(network, port_number, remove=False):
+    """ Apply/Remove ipv6 filter rule to network.  """
+    if not remove:
         flow_cmd = build_flow_rule(in_port=port_number, dl_src=network.mac,
                                    protocol="ipv6", ipv6_src=network.ipv6,
                                    priority=42000, actions="normal")
@@ -152,8 +169,9 @@ def ipv6_filter(network, port_number, delete=False):
         ofctl_command_execute(["del-flows", network.bridge, flow_cmd])
 
 
-def arp_filter(network, port_number, delete=False):
-    if not delete:
+def arp_filter(network, port_number, remove=False):
+    """ Apply/Remove arp filter rule to network. """
+    if not remove:
         flow_cmd = build_flow_rule(in_port=port_number, dl_src=network.mac,
                                    protocol="arp", nw_src=network.ipv4,
                                    priority=41000, actions="normal")
@@ -164,8 +182,9 @@ def arp_filter(network, port_number, delete=False):
         ofctl_command_execute(["del-flows", network.bridge, flow_cmd])
 
 
-def enable_dhcp_client(network, port_number, delete=False):
-    if not delete:
+def enable_dhcp_client(network, port_number, remove=False):
+    """ Apply/Remove allow dhcp-client rule to network. """
+    if not remove:
         flow_cmd = build_flow_rule(in_port=port_number, dl_src=network.mac,
                                    protocol="udp", tp_dst="67",
                                    priority="40000", actions="normal")
@@ -176,8 +195,9 @@ def enable_dhcp_client(network, port_number, delete=False):
         ofctl_command_execute(["del-flows", network.bridge, flow_cmd])
 
 
-def disable_all_not_allowed_trafic(network, port_number, delete=False):
-    if not delete:
+def disable_all_not_allowed_trafic(network, port_number, remove=False):
+    """ Apply/Remove explicit deny all not allowed network. """
+    if not remove:
         flow_cmd = build_flow_rule(in_port=port_number,
                                    priority="30000", actions="drop")
         ofctl_command_execute(["add-flow", network.bridge, flow_cmd])
@@ -187,8 +207,7 @@ def disable_all_not_allowed_trafic(network, port_number, delete=False):
 
 
 def port_create(network):
-    ''' Adding port to bridge apply rules and pull up interface.
-    '''
+    """ Adding port to bridge apply rules and pull up interface. """
     # For testing purpose create tuntap iface
     if driver == "test":
         add_tuntap_interface(network.name)
@@ -218,22 +237,21 @@ def port_create(network):
 
 
 def port_delete(network):
-    '''
-    '''
+    """ Remove port from bridge and remove rules from flow database. """
     # Getting network FlowPortNumber
     port_number = get_fport_for_network(network)
 
     # Clear network rules
     if network.managed:
-        ban_dhcp_server(network, port_number, delete=True)
-        ipv4_filter(network, port_number, delete=True)
-        ipv6_filter(network, port_number, delete=True)
-        arp_filter(network, port_number, delete=True)
-        enable_dhcp_client(network, port_number, delete=True)
+        ban_dhcp_server(network, port_number, remove=True)
+        ipv4_filter(network, port_number, remove=True)
+        ipv6_filter(network, port_number, remove=True)
+        arp_filter(network, port_number, remove=True)
+        enable_dhcp_client(network, port_number, remove=True)
     else:
-        mac_filter(network, port_number, delete=True)
+        mac_filter(network, port_number, remove=True)
     # Explicit deny all other traffic
-    disable_all_not_allowed_trafic(network, port_number, delete=True)
+    disable_all_not_allowed_trafic(network, port_number, remove=True)
 
     # Delete port
     del_port_from_bridge(network.name)
@@ -244,6 +262,11 @@ def port_delete(network):
 
 
 def pull_up_interface(network):
+    """ Pull up interface named network.
+
+    return command output
+
+    """
     command = ['sudo', 'ip', 'link', 'set', 'up', network.name]
     return_val = subprocess.call(command)
     logging.info('IP command: %s executed.', command)
@@ -251,9 +274,13 @@ def pull_up_interface(network):
 
 
 def get_fport_for_network(network):
-    '''Returns the OpenFlow port number for a given network
-    cmd: ovs-vsctl get Interface vm-88 ofport
-    '''
+    """ Return the OpenFlow port number for a given network.
+
+    Example: ovs-vsctl get Interface vm-88 ofport
+
+    return stripped output string
+
+    """
     output = subprocess.check_output(
         ['sudo', 'ovs-vsctl', 'get', 'Interface', network.name, 'ofport'])
-    return output.strip()
+    return str(output).strip()
