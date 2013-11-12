@@ -211,6 +211,22 @@ def list_domains():
 @celery.task
 @req_connection
 @wrap_libvirtError
+def list_domains_info():
+    """ List the running domains.
+
+    :return list: List of domains info dict.
+
+    """
+    domain_list = []
+    for i in Connection.get().listDomainsID():
+        dom = Connection.get().lookupByID(i)
+        domain_list.append(_parse_info(dom.info()))
+    return domain_list
+
+
+@celery.task
+@req_connection
+@wrap_libvirtError
 def lookupByName(name):
     """ Return with the requested Domain. """
     return Connection.get().lookupByName(name)
