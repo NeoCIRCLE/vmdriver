@@ -220,7 +220,9 @@ def list_domains_info():
     domain_list = []
     for i in Connection.get().listDomainsID():
         dom = Connection.get().lookupByID(i)
-        domain_list.append(_parse_info(dom.info()))
+        domain_dict = _parse_info(dom.info())
+        domain_dict['name'] = dom.name()
+        domain_list.append(domain_dict)
     return domain_list
 
 
