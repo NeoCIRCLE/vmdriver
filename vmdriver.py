@@ -491,3 +491,7 @@ def migrate(name, host, live=False):
         dname=name,
         bandwidth=0)
     # return _parse_info(domain.info())
+
+@celery.task
+def ping():
+    return True
