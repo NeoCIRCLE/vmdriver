@@ -3,8 +3,12 @@ import libvirt
 import logging
 import os
 import sys
-from vm import VMInstance
 from decorator import decorator
+
+from psutil import NUM_CPUS, virtual_memory
+
+
+from vm import VMInstance
 from vmcelery import celery, lib_connection
 
 sys.path.append(os.path.dirname(os.path.basename(__file__)))
@@ -492,6 +496,16 @@ def migrate(name, host, live=False):
         bandwidth=0)
     # return _parse_info(domain.info())
 
+
 @celery.task
 def ping():
     return True
+
+
+@celery.task
+def get_core_num():
+    return NUM_CPUS
+
+@celery.task
+def get_ram_size():
+    return virtual_memory().total

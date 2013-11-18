@@ -1,3 +1,4 @@
 celery==3.0.23
 decorator==3.4.0
 lxml==3.2.3
+psutil==1.1.3
