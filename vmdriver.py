@@ -506,6 +506,7 @@ def ping():
 def get_core_num():
     return NUM_CPUS
 
+
 @celery.task
 def get_ram_size():
     return virtual_memory().total
