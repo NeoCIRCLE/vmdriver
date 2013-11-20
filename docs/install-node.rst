@@ -6,7 +6,7 @@ Installation of a development node machine
 Preparation
 -----------
 
-First create a new Ubuntu 12.04 LTS or later instance. Set up git.. TODO
+First create a new Ubuntu 12.04 LTS instance. Set up git.. TODO
 
 
 Setting up required software
@@ -14,10 +14,10 @@ Setting up required software
 Update package list and install the required softwares::
 
   $ sudo apt-get update
-    sudo apt-get install --yes python-pip virtualenvwrapper git python-dev \
-    openvswitch-common openvswitch-datapath-dkms openvswitch-switch \
-    openvswitch-controller libvirt-bin python-libvirt \
-    libxml2-dev libxslt1-dev
+  $ sudo apt-get install --yes python-pip virtualenvwrapper git python-dev \
+  openvswitch-common openvswitch-datapath-dkms openvswitch-switch \
+  openvswitch-controller libvirt-bin python-libvirt \
+  libxml2-dev libxslt1-dev
 
 Configuring network
 -------------------
@@ -33,15 +33,17 @@ Configuring the libvirt daemon
 ------------------------------
 Change the libvirt default settings in */etc/libvirt/qemu.conf*::
 
-  $ clear_emulator_capabilities = 0
-  $ user = root
-  $ group = root
-  $ cgroup_device_acl = [
+  $ sudo tee -a /etc/libvirt/qemu.conf <<A
+  clear_emulator_capabilities = 0
+  user = "root"
+  group = "root"
+  cgroup_device_acl = [
   "/dev/null", "/dev/full", "/dev/zero",
   "/dev/random", "/dev/urandom",
   "/dev/ptmx", "/dev/kvm", "/dev/kqemu",
   "/dev/rtc", "/dev/hpet", "/dev/net/tun",
   ]
+  A
 
 Setting up SSL certificates for migrations::
 
@@ -63,7 +65,7 @@ Save configuration to virtualenv and activate environment::
   $ cat >>/home/cloud/.virtualenvs/vmdriver/bin/postactivate <<END
   export LIBVIRT_KEEPALIVE=True
   export LIBVIRT_URI=test:///default
-  export AMQP_URI=amqp://cloud:password@host/circle
+  export AMQP_URI=amqp://cloud:password@$(hostname)/circle
   export HYPERVISOR_TYPE=test 
   END
 
