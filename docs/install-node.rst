@@ -1,7 +1,8 @@
-Installation of a development node machine
-==========================================
-
-.. highlight:: bash
+-Installation of a development node machine
+-==========================================
+-
+-.. highlight:: bash
+-
 
 Preparation
 -----------
@@ -46,6 +47,12 @@ Change the libvirt default settings in */etc/libvirt/qemu.conf*::
   A
 
 Setting up SSL certificates for migrations::
+
+  Add "-l" parameter to /etc/default/libvirt-bin at libvirtd-opts="-d -l"
+  
+  /etc/libvirt/libvirtd.conf
+  listen_tcp = 1
+  auth_tcp = "none"
 
   $ TODO
 
