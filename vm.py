@@ -69,6 +69,7 @@ class VMInstance:
         self.raw_data = raw_data
         self.seclabel_type = seclabel_type
         self.seclabel_mode = seclabel_mode
+        self.boot_token = boot_token
 
     @classmethod
     def deserialize(cls, desc):
@@ -107,6 +108,17 @@ class VMInstance:
             devices.append(disk.build_xml())
         for network in self.network_list:
             devices.append(network.build_xml())
+        # Serial console
+        serial = ET.SubElement(devices,
+                               'console',
+                               attrib={'type': 'unix'})
+        ET.SubElement(serial,
+                      'target',
+                      attrib={'port': '0'})
+        ET.SubElement(serial,
+                      'source',
+                      attrib={'mode': 'bind',
+                              'path': '/var/lib/libvirt/serial/%s' % self.name})
         # Console/graphics section
         if self.graphics is not None:
             ET.SubElement(devices,

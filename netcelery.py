@@ -11,7 +11,7 @@ celery = Celery('netdriver', backend='amqp',
                 include=['netdriver'])
 
 celery.conf.update(
-
+    CELERY_TASK_RESULT_EXPIRES = 300,
     CELERY_QUEUES=(
         Queue(HOSTNAME + '.net', Exchange(
             'netdriver', type='direct'), routing_key='netdriver'),

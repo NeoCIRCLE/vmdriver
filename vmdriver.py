@@ -3,6 +3,8 @@ import libvirt
 import logging
 import os
 import sys
+import socket
+import json
 from decorator import decorator
 
 from psutil import NUM_CPUS, virtual_memory
@@ -174,6 +176,15 @@ def create(vm_desc):
         Connection.get().createXML(
             vm.dump_xml(), libvirt.VIR_DOMAIN_START_PAUSED)
         logging.info("Virtual machine %s is created from xml", vm.name)
+    # context
+    try:
+        sock = socket.create_connection(('127.0.0.1', 1235), 3)
+        data = {'boot_token': vm.boot_token,
+                'socket': '/var/lib/libvirt/serial/%s' % vm.name}
+        sock.sendall(json.dumps(data))
+        sock.close()
+    except socket.error:
+        logging.error('Unable to connect to context server')
     return domain_info(vm.name)
 
 

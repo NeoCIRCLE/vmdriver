@@ -16,9 +16,12 @@ celery = Celery('vmcelery', backend='amqp',
                 include=['vmdriver'])
 
 celery.conf.update(
+    CELERY_TASK_RESULT_EXPIRES = 300,
     CELERY_QUEUES=(
         Queue(HOSTNAME + '.vm', Exchange(
             'vmdriver', type='direct'), routing_key="vmdriver"),
+#        Queue(HOSTNAME + '.monitor', Exchange(
+#            'monitor', type='direct'), routing_key="monitor"),
     )
 )
 
