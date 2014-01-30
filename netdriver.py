@@ -217,6 +217,9 @@ def port_create(network):
     # Set VLAN parameter for tap interface
     set_port_vlan(network.name, network.vlan)
 
+    # Clear all old rules
+    clear_port_rules(network)
+
     # Getting network FlowPortNumber
     port_number = get_fport_for_network(network)
 
@@ -241,15 +244,17 @@ def port_delete(network):
     # Getting network FlowPortNumber
     port_number = get_fport_for_network(network)
 
-    # Clear network rules
-    if network.managed:
-        ban_dhcp_server(network, port_number, remove=True)
-        ipv4_filter(network, port_number, remove=True)
-        ipv6_filter(network, port_number, remove=True)
-        arp_filter(network, port_number, remove=True)
-        enable_dhcp_client(network, port_number, remove=True)
-    else:
-        mac_filter(network, port_number, remove=True)
+    # Clear network rules - debuggin 1 by 1 delete
+    #if network.managed:
+    #    ban_dhcp_server(network, port_number, remove=True)
+    #    ipv4_filter(network, port_number, remove=True)
+    #    ipv6_filter(network, port_number, remove=True)
+    #    arp_filter(network, port_number, remove=True)
+    #    enable_dhcp_client(network, port_number, remove=True)
+    #else:
+    #    mac_filter(network, port_number, remove=True)
+    clear_port_rules(network)
+
     # Explicit deny all other traffic
     disable_all_not_allowed_trafic(network, port_number, remove=True)
 
@@ -259,6 +264,13 @@ def port_delete(network):
     # For testing purpose dele tuntap iface
     if driver == "test":
         del_tuntap_interface(network.name)
+
+
+def clear_port_rules(network):
+    """ Clear all rules for a port. """
+    port_number = get_fport_for_network(network)
+    flow_cmd = build_flow_rule(in_port=port_number)
+    ofctl_command_execute(["del-flows", network.bridge, flow_cmd])
 
 
 def pull_up_interface(network):
