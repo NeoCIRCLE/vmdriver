@@ -18,7 +18,7 @@ Update package list and install the required softwares::
   $ sudo apt-get install --yes python-pip virtualenvwrapper git python-dev \
   openvswitch-common openvswitch-datapath-dkms openvswitch-switch \
   openvswitch-controller libvirt-bin python-libvirt \
-  libxml2-dev libxslt1-dev
+  libxml2-dev libxslt1-dev qemu-kvm
 
 Configuring network
 -------------------
@@ -93,5 +93,3 @@ Start celery daemons::
 
   $ sudo start vmcelery
   $ sudo start netcelery
-
-
