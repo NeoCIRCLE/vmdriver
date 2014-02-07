@@ -527,5 +527,5 @@ def get_ram_size():
 def get_node_metrics():
     result = {}
     result['cpu.usage'] = cpu_percent(0)
-    result['memory.usage'] = virtmem_usage.percent()
+    result['memory.usage'] = virtual_memory().percent
     return result
