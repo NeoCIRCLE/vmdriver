@@ -7,7 +7,7 @@ import socket
 import json
 from decorator import decorator
 
-from psutil import NUM_CPUS, virtual_memory
+from psutil import NUM_CPUS, virtual_memory, virtmem_usage, cpu_percent
 
 
 from vm import VMInstance
@@ -521,3 +521,11 @@ def get_core_num():
 @celery.task
 def get_ram_size():
     return virtual_memory().total
+
+
+@celery.task
+def get_node_metrics():
+    result = {}
+    result['cpu.usage'] = cpu_percent(0)
+    result['memory.usage'] = virtmem_usage.percent()
+    return result
