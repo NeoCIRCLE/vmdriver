@@ -118,7 +118,8 @@ class VMInstance:
         ET.SubElement(serial,
                       'source',
                       attrib={'mode': 'bind',
-                              'path': '/var/lib/libvirt/serial/%s' % self.name})
+                              'path': '/var/lib/libvirt/serial/%s'
+                              % self.name})
         # Console/graphics section
         if self.graphics is not None:
             ET.SubElement(devices,
@@ -248,6 +249,7 @@ class VMNetwork:
                  ipv4=None,
                  ipv6=None,
                  network_type='ethernet',
+                 virtual_port=None,
                  model='virtio',
                  QoS=None,
                  vlan=0,
@@ -259,6 +261,7 @@ class VMNetwork:
         self.ipv4 = ipv4
         self.ipv6 = ipv6
         self.model = model
+        self.virtual_port = virtual_port
         self.QoS = QoS
         self.vlan = vlan
         self.managed = managed
@@ -270,13 +273,23 @@ class VMNetwork:
     # XML dump
     def build_xml(self):
         xml_top = ET.Element('interface', attrib={'type': self.network_type})
+        if self.vlan > 0 and self.network_type == "bridge":
+            xml_vlan = ET.SubElement(xml_top, 'vlan')
+            ET.SubElement(xml_vlan, 'tag', attrib={'id': self.vlan})
+        if self.network_type == "bridge":
+            ET.SubElement(xml_top, 'source', attrib={'bridge': self.bridge})
+        if self.network_type == "ethernet":
+            ET.SubElement(xml_top, 'script', attrib={'path': self.script_exec})
+        if self.virtual_port is not None:
+            ET.SubElement(xml_top, 'virtualport',
+                          attrib={'type': self.virtual_port})
         ET.SubElement(xml_top, 'target', attrib={'dev': self.name})
         ET.SubElement(xml_top, 'mac', attrib={'address': self.mac})
         ET.SubElement(xml_top, 'model', attrib={'type': self.model})
-        ET.SubElement(xml_top, 'script', attrib={'path': self.script_exec})
         ET.SubElement(xml_top, 'rom', attrib={'bar': 'off'})
         return xml_top
 
     def dump_xml(self):
         return ET.tostring(self.build_xml(), encoding='utf8',
-                           method='xml', pretty_print=True)
+                           method='xml',
+                           pretty_print=True)
