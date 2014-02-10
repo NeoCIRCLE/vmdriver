@@ -227,8 +227,10 @@ def port_create(network):
     if network.managed:
         # Allow traffic from fource MAC and IP
         ban_dhcp_server(network, port_number)
-        ipv4_filter(network, port_number)
-        ipv6_filter(network, port_number)
+        if network.ipv4 != "None":
+            ipv4_filter(network, port_number)
+        if network.ipv6 != "None":
+            ipv6_filter(network, port_number)
         arp_filter(network, port_number)
         enable_dhcp_client(network, port_number)
     else:
