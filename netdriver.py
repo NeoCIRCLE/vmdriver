@@ -243,22 +243,8 @@ def port_create(network):
 
 def port_delete(network):
     """ Remove port from bridge and remove rules from flow database. """
-    # Getting network FlowPortNumber
-    port_number = get_fport_for_network(network)
-
-    # Clear network rules - debuggin 1 by 1 delete
-    #if network.managed:
-    #    ban_dhcp_server(network, port_number, remove=True)
-    #    ipv4_filter(network, port_number, remove=True)
-    #    ipv6_filter(network, port_number, remove=True)
-    #    arp_filter(network, port_number, remove=True)
-    #    enable_dhcp_client(network, port_number, remove=True)
-    #else:
-    #    mac_filter(network, port_number, remove=True)
+    # Clear all port rules
     clear_port_rules(network)
-
-    # Explicit deny all other traffic
-    disable_all_not_allowed_trafic(network, port_number, remove=True)
 
     # Delete port
     del_port_from_bridge(network.name)
