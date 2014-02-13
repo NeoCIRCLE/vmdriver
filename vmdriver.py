@@ -9,6 +9,7 @@ from decorator import decorator
 
 from psutil import NUM_CPUS, virtual_memory, cpu_percent
 
+from celery.contrib.abortable import AbortableTask
 
 from vm import VMInstance
 from vmcelery import celery, lib_connection
@@ -188,30 +189,38 @@ def create(vm_desc):
     return domain_info(vm.name)
 
 
-@celery.task(time_limit=120)
-@req_connection
-def shutdown(name):
+class shutdown(AbortableTask):
     """ Shutdown virtual machine (need ACPI support).
-    Return When domain is missing.
+    Return When domain is missiing.
+    This job is abortable:
+        AbortableAsyncResult(id="<<jobid>>").abort()
     """
-    from time import sleep
-    try:
-        domain = lookupByName(name)
-        domain.shutdown()
-        while True:
-            try:
-                Connection.get().lookupByName(name)
-            except Exception as e:
-                if e.get_error_code() == libvirt.VIR_ERR_NO_DOMAIN:
-                    return
+    time_limit = 120
+
+    @req_connection
+    def run(self, **kwargs):
+        from time import sleep
+        name = kwargs['name']
+        try:
+            domain = lookupByName(name)
+            domain.shutdown()
+            while True:
+                try:
+                    Connection.get().lookupByName(name)
+                except libvirt.libvirtError as e:
+                    if e.get_error_code() == libvirt.VIR_ERR_NO_DOMAIN:
+                        return
+                    else:
+                        raise
                 else:
-                    raise
-            else:
-                sleep(5)
-    except Exception as e:
-        new_e = Exception(e.get_error_message())
-        new_e.libvirtError = True
-        raise new_e
+                    if self.is_aborted(**kwargs):
+                        logging.info("Shutdown aborted on vm: %s", name)
+                        return
+                    sleep(5)
+        except libvirt.libvirtError as e:
+            new_e = Exception(e.get_error_message())
+            new_e.libvirtError = True
+            raise new_e
 
 
 @celery.task
