@@ -481,19 +481,18 @@ def send_key(name, key_code):
 
 
 def _stream_handler(stream, buf, opaque):
-    fd = opaque
-    os.write(fd, buf)
+    opaque.write(buf)
 
 
 @celery.task
 @req_connection
 @wrap_libvirtError
-def screenshot(name, path):
+def screenshot(name):
     """Save screenshot of virtual machine.
-
-    Image is saved to the path as name-screenshot.ppm
-
+    Returns a ByteIO object that contains the screenshot in png format.
     """
+    from io import BytesIO
+    from PIL import Image
     # Import linuxkeys to get defines
     import linuxkeys
     # Connection need for the stream object
@@ -506,14 +505,20 @@ def screenshot(name, path):
     # Take screenshot accessible by stream (return mimetype)
     domain.screenshot(stream, 0, 0)
     # Get file to save data (send on AMQP?)
+    fd = BytesIO()
     try:
-        fd = os.open(path + "/" + name + "-screenshot.ppm",
-                     os.O_WRONLY | os.O_TRUNC | os.O_CREAT, 0o644)
         # Save data with handler
         stream.recvAll(_stream_handler, fd)
     finally:
         stream.finish()
-        os.close(fd)
+    #Convert ppm to png
+    #Seek to the beginning of the stream
+    fd.seek(0)
+    # Get the image
+    image = BytesIO()
+    ppm = Image.open(fd)
+    ppm.save(image, format='PNG')
+    return image
 
 
 @celery.task
