@@ -186,7 +186,7 @@ def create(vm_desc):
         sock.close()
     except socket.error:
         logging.error('Unable to connect to context server')
-    return domain_info(vm.name)
+    return xml
 
 
 class shutdown(AbortableTask):
@@ -363,7 +363,7 @@ def reset(name):
     """
 
     domain = lookupByName(name)
-    domain.reset()
+    domain.reset(0)
     return _parse_info(domain.info())
 
 
@@ -377,7 +377,7 @@ def reboot(name):
 
     """
     domain = lookupByName(name)
-    domain.reboot()
+    domain.reboot(0)
     return _parse_info(domain.info())
 
 
