@@ -28,6 +28,6 @@ celery.conf.update(
     )
 )
 
-if to_bool(getenv('LIBVIRT_KEEPALIVE', False)):
+if to_bool(getenv('LIBVIRT_KEEPALIVE', "False")):
     import libvirt
     lib_connection = libvirt.open(getenv('LIBVIRT_URI'))
