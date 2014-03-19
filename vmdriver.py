@@ -169,6 +169,8 @@ def create(vm_desc):
     vm = VMInstance.deserialize(vm_desc)
     # Setting proper hypervisor
     vm.vm_type = os.getenv("HYPERVISOR_TYPE", "test")
+    if vm.vm_type == "test":
+        vm.arch = "i686"
     vm_xml_dump = vm.dump_xml()
     logging.info(vm_xml_dump)
     # Emulating DOMAIN_START_PAUSED FLAG behaviour on test driver
