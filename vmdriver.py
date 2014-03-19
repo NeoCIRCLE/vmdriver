@@ -16,6 +16,7 @@ from vmcelery import celery, lib_connection
 
 sys.path.append(os.path.dirname(os.path.basename(__file__)))
 
+vm_xml_dump = None
 
 state_dict = {0: 'NOSTATE',
               1: 'RUNNING',
@@ -99,6 +100,10 @@ def wrap_libvirtError(original_function, *args, **kw):
         return original_function(*args, **kw)
     except libvirt.libvirtError as e:
         logging.error(e.get_error_message())
+        e_msg = e.get_error_message()
+        if vm_xml_dump is not None:
+            e_msg += "\n"
+            e_msg += vm_xml_dump
         new_e = Exception(e.get_error_message())
         new_e.libvirtError = True
         raise new_e
@@ -164,18 +169,18 @@ def create(vm_desc):
     vm = VMInstance.deserialize(vm_desc)
     # Setting proper hypervisor
     vm.vm_type = os.getenv("HYPERVISOR_TYPE", "test")
-    xml = vm.dump_xml()
-    logging.info(xml)
+    vm_xml_dump = vm.dump_xml()
+    logging.info(vm_xml_dump)
     # Emulating DOMAIN_START_PAUSED FLAG behaviour on test driver
     if vm.vm_type == "test":
         Connection.get().createXML(
-            xml, libvirt.VIR_DOMAIN_NONE)
+            vm_xml_dump, libvirt.VIR_DOMAIN_NONE)
         domain = lookupByName(vm.name)
         domain.suspend()
     # Real driver create
     else:
         Connection.get().createXML(
-            vm.dump_xml(), libvirt.VIR_DOMAIN_START_PAUSED)
+            vm_xml_dump, libvirt.VIR_DOMAIN_START_PAUSED)
         logging.info("Virtual machine %s is created from xml", vm.name)
     # context
     try:
@@ -186,7 +191,7 @@ def create(vm_desc):
         sock.close()
     except socket.error:
         logging.error('Unable to connect to context server')
-    return xml
+    return vm_xml_dump
 
 
 class shutdown(AbortableTask):
