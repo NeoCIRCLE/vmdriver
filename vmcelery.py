@@ -9,6 +9,9 @@ HOSTNAME = gethostname()
 AMQP_URI = getenv('AMQP_URI')
 
 
+def to_bool(value):
+    return value.lower() in ("true", "yes", "y", "t")
+
 lib_connection = None
 
 celery = Celery('vmcelery', backend='amqp',
@@ -25,6 +28,6 @@ celery.conf.update(
     )
 )
 
-if getenv('LIBVIRT_KEEPALIVE') is not None:
+if to_bool(getenv('LIBVIRT_KEEPALIVE', False)):
     import libvirt
     lib_connection = libvirt.open(getenv('LIBVIRT_URI'))
