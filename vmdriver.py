@@ -6,6 +6,7 @@ import sys
 import socket
 import json
 from decorator import decorator
+import lxml.etree as ET
 
 from psutil import NUM_CPUS, virtual_memory, cpu_percent
 
@@ -551,6 +552,15 @@ def ping():
 
 
 @celery.task
+@req_connection
+@wrap_libvirtError
+def get_architecture():
+    xml = Connection.get().getCapabilities()
+    return ET.fromstring(xml).getchildren()[0].getchildren(
+    )[1].getchildren()[0].text
+
+
+@celery.task
 def get_core_num():
     return NUM_CPUS
 
@@ -558,6 +568,13 @@ def get_core_num():
 @celery.task
 def get_ram_size():
     return virtual_memory().total
+
+
+@celery.task
+def get_info():
+    return {'core_num': get_core_num(),
+            'ram_size': get_ram_size(),
+            'architecture': get_architecture()}
 
 
 @celery.task
