@@ -13,7 +13,7 @@ from psutil import NUM_CPUS, virtual_memory, cpu_percent
 from celery.contrib.abortable import AbortableTask
 
 from vm import VMInstance
-from vmcelery import celery, lib_connection
+from vmcelery import celery, lib_connection, to_bool
 
 sys.path.append(os.path.dirname(os.path.basename(__file__)))
 
@@ -118,7 +118,7 @@ def connect(connection_string='qemu:///system'):
     the default is the local root.
 
     """
-    if os.getenv('LIBVIRT_KEEPALIVE') is None:
+    if not to_bool(os.getenv('LIBVIRT_KEEPALIVE', "False")):
         if Connection.get() is None:
             Connection.set(libvirt.open(connection_string))
             logging.debug("Connection estabilished to libvirt.")
