@@ -1,8 +1,8 @@
--Installation of a development node machine
--==========================================
--
--.. highlight:: bash
--
+Installation of a development node machine
+==========================================
+
+.. highlight:: bash
+
 
 Preparation
 -----------
