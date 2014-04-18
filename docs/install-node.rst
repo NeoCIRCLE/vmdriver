@@ -28,7 +28,10 @@ Configure Open vSwitch bridge that handle vitual connections::
 
 Enable passwordless Open vSwitch commands::
 
-  $ TODO
+  $ sudo tee /etc/sudoers.d/netdriver <<END
+    cloud            ALL = (ALL) NOPASSWD: /usr/bin/ovs-ofctl, /usr/bin/ovs-vsctl, /sbin/ip link set *
+    END
+  $ sudo chmod 660 /etc/sudoers.d/netdriver
 
 Configuring the libvirt daemon
 ------------------------------
