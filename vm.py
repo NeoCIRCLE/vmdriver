@@ -1,5 +1,9 @@
 import lxml.etree as ET
 
+from os import getenv
+
+NATIVE_OVS = getenv('NATIVE_OVS') == 'True'
+
 # VM Instance class
 
 
@@ -248,7 +252,7 @@ class VMNetwork:
                  bridge="cloud",
                  ipv4=None,
                  ipv6=None,
-                 network_type='ethernet',
+                 network_type=None,
                  virtual_port=None,
                  model='virtio',
                  QoS=None,
@@ -256,12 +260,19 @@ class VMNetwork:
                  managed=False):
         self.name = name
         self.bridge = bridge
-        self.network_type = network_type
         self.mac = mac
         self.ipv4 = ipv4
         self.ipv6 = ipv6
         self.model = model
-        self.virtual_port = virtual_port
+        if not network_type:
+            if NATIVE_OVS:
+                self.network_type = 'bridge',
+                self.virtual_port = 'openvswitch',
+            else:
+                self.network_type = 'ethernet'
+        else:
+            self.network_type = network_type
+            self.virtual_port = virtual_port
         self.QoS = QoS
         self.vlan = vlan
         self.managed = managed
