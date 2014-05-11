@@ -266,8 +266,8 @@ class VMNetwork:
         self.model = model
         if not network_type:
             if NATIVE_OVS:
-                self.network_type = 'bridge',
-                self.virtual_port = 'openvswitch',
+                self.network_type = 'bridge'
+                self.virtual_port = 'openvswitch'
             else:
                 self.network_type = 'ethernet'
         else:
