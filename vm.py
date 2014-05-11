@@ -275,7 +275,7 @@ class VMNetwork:
         xml_top = ET.Element('interface', attrib={'type': self.network_type})
         if self.vlan > 0 and self.network_type == "bridge":
             xml_vlan = ET.SubElement(xml_top, 'vlan')
-            ET.SubElement(xml_vlan, 'tag', attrib={'id': self.vlan})
+            ET.SubElement(xml_vlan, 'tag', attrib={'id': str(self.vlan)})
         if self.network_type == "bridge":
             ET.SubElement(xml_top, 'source', attrib={'bridge': self.bridge})
         if self.network_type == "ethernet":
