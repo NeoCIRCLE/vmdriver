@@ -270,6 +270,7 @@ class VMNetwork:
                 self.virtual_port = 'openvswitch'
             else:
                 self.network_type = 'ethernet'
+                self.virtual_port = virtual_port
         else:
             self.network_type = network_type
             self.virtual_port = virtual_port
