@@ -1,6 +1,5 @@
 import lxml.etree as ET
 
-from os import getenv
 from vmcelery import native_ovs
 
 
