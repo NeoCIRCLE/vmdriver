@@ -23,7 +23,15 @@ CACHE_URI = getenv('CACHE_URI')
 def to_bool(value):
     return value.lower() in ("true", "yes", "y", "t")
 
+# Global configuration parameters declaration
 lib_connection = None
+native_ovs = False
+
+if to_bool(getenv('LIBVIRT_KEEPALIVE', "False")):
+    import libvirt
+    lib_connection = libvirt.open(getenv('LIBVIRT_URI'))
+if to_bool(getenv('NATIVE_OVS', "False")):
+    native_ovs = True
 
 celery = Celery('vmcelery',
                 broker=AMQP_URI,
@@ -38,7 +46,3 @@ celery.conf.update(
             'vmdriver', type='direct'), routing_key="vmdriver"),
     )
 )
-
-if to_bool(getenv('LIBVIRT_KEEPALIVE', "False")):
-    import libvirt
-    lib_connection = libvirt.open(getenv('LIBVIRT_URI'))
