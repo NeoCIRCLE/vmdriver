@@ -24,6 +24,13 @@ def to_bool(value):
     return value.lower() in ("true", "yes", "y", "t")
 
 lib_connection = None
+native_ovs = False
+
+if to_bool(getenv('LIBVIRT_KEEPALIVE', "False")):
+    import libvirt
+    lib_connection = libvirt.open(getenv('LIBVIRT_URI'))
+if to_bool(getenv('NATIVE_OVS', "False")):
+    native_ovs = True
 
 celery = Celery('netcelery',
                 broker=AMQP_URI,
@@ -38,7 +45,3 @@ celery.conf.update(
             'netdriver', type='direct'), routing_key="netdriver"),
     )
 )
-
-if to_bool(getenv('LIBVIRT_KEEPALIVE', "False")):
-    import libvirt
-    lib_connection = libvirt.open(getenv('LIBVIRT_URI'))
