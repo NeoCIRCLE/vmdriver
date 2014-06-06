@@ -5,7 +5,7 @@ import logging
 from netcelery import celery
 from os import getenv
 from vm import VMNetwork
-
+from vmcelery import native_ovs
 driver = getenv("HYPERVISOR_TYPE", "test")
 
 
@@ -212,10 +212,11 @@ def port_create(network):
     if driver == "test":
         add_tuntap_interface(network.name)
 
-    # Create the port for virtual network
-    add_port_to_bridge(network.name, network.bridge)
-    # Set VLAN parameter for tap interface
-    set_port_vlan(network.name, network.vlan)
+    if not native_ovs:
+        # Create the port for virtual network
+        add_port_to_bridge(network.name, network.bridge)
+        # Set VLAN parameter for tap interface
+        set_port_vlan(network.name, network.vlan)
 
     # Clear all old rules
     clear_port_rules(network)
@@ -246,8 +247,9 @@ def port_delete(network):
     # Clear all port rules
     clear_port_rules(network)
 
-    # Delete port
-    del_port_from_bridge(network.name)
+    if not native_ovs:
+        # Delete port
+        del_port_from_bridge(network.name)
 
     # For testing purpose dele tuntap iface
     if driver == "test":
