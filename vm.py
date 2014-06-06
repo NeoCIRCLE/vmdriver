@@ -1,8 +1,8 @@
 import lxml.etree as ET
 
 from os import getenv
+from vmcelery import native_ovs
 
-NATIVE_OVS = getenv('NATIVE_OVS') == 'True'
 
 # VM Instance class
 
@@ -265,7 +265,7 @@ class VMNetwork:
         self.ipv6 = ipv6
         self.model = model
         if not network_type:
-            if NATIVE_OVS:
+            if native_ovs:
                 self.network_type = 'bridge'
                 self.virtual_port = 'openvswitch'
             else:
