@@ -297,7 +297,8 @@ class VMNetwork:
         ET.SubElement(xml_top, 'target', attrib={'dev': self.name})
         ET.SubElement(xml_top, 'mac', attrib={'address': self.mac})
         ET.SubElement(xml_top, 'model', attrib={'type': self.model})
-        ET.SubElement(xml_top, 'rom', attrib={'bar': 'off'})
+        # ET.SubElement(xml_top, 'rom', attrib={'bar': 'off'}) Bugged (hot-plug
+        # failure)
         return xml_top
 
     def dump_xml(self):
