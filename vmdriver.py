@@ -12,7 +12,7 @@ from psutil import NUM_CPUS, virtual_memory, cpu_percent
 
 from celery.contrib.abortable import AbortableTask
 
-from vm import VMInstance
+from vm import VMInstance, VMDisk, VMNetwork
 from vmcelery import celery, lib_connection, to_bool
 
 sys.path.append(os.path.dirname(os.path.basename(__file__)))
@@ -519,8 +519,8 @@ def screenshot(name):
         stream.recvAll(_stream_handler, fd)
     finally:
         stream.finish()
-    #Convert ppm to png
-    #Seek to the beginning of the stream
+    # Convert ppm to png
+    # Seek to the beginning of the stream
     fd.seek(0)
     # Get the image
     image = BytesIO()
@@ -544,6 +544,43 @@ def migrate(name, host, live=False):
         dname=name,
         bandwidth=0)
     # return _parse_info(domain.info())
+
+
+@celery.task
+@req_connection
+@wrap_libvirtError
+def attach_disk(name, disk):
+    domain = lookupByName(name)
+    disk = VMDisk.deserialize(disk)
+    domain.attachDevice(disk.dump_xml())
+
+
+@celery.task
+@req_connection
+@wrap_libvirtError
+def detach_disk(name, disk):
+    domain = lookupByName(name)
+    disk = VMDisk.deserialize(disk)
+    domain.detachDevice(disk.dump_xml())
+
+
+@celery.task
+@req_connection
+@wrap_libvirtError
+def attach_network(name, net):
+    domain = lookupByName(name)
+    net = VMNetwork.deserialize(net)
+    logging.error(net.dump_xml())
+    domain.attachDevice(net.dump_xml())
+
+
+@celery.task
+@req_connection
+@wrap_libvirtError
+def detach_network(name, net):
+    domain = lookupByName(name)
+    net = VMNetwork.deserialize(net)
+    domain.detachDevice(net.dump_xml())
 
 
 @celery.task
