@@ -248,7 +248,7 @@ def port_delete(network):
     try:
         clear_port_rules(network)
     except:
-        pass # Missing port (deleted already)
+        pass  # Missing port (deleted already)
 
     if not native_ovs:
         # Delete port

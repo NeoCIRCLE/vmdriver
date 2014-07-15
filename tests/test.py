@@ -2,7 +2,7 @@
 
 import vm
 import vmdriver
-#import logging
+# import logging
 from nose.tools import raises
 
 graphics = {'type': 'vnc', 'listen':
@@ -34,18 +34,18 @@ asd = vm.VMInstance.deserialize(vmdict)
 print asd.dump_xml()
 
 # Enable logging
-#logging.basicConfig(filename='example.log', level=logging.DEBUG)
-#print testvm.dump_xml()
-#vm_driver = vmdriver.VMDriver()
-#vm_driver.connect()
-#vm_driver.vm_define(testvm)
-#print '%(name)s defined.' % {'name': testvm.name}
-#for i in vm_driver.list_domains():
+# logging.basicConfig(filename='example.log', level=logging.DEBUG)
+# print testvm.dump_xml()
+# vm_driver = vmdriver.VMDriver()
+# vm_driver.connect()
+# vm_driver.vm_define(testvm)
+# print '%(name)s defined.' % {'name': testvm.name}
+# for i in vm_driver.list_domains():
 #    print i
 #    #vm_driver.vm_start(i)
 #    vm_driver.vm_undefine(i)
 #    print '%(name)s undefined.' % {'name': i}
-#vm_driver.disconnect()
+# vm_driver.disconnect()
 
 
 @raises(AttributeError)
