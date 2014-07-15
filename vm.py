@@ -180,7 +180,8 @@ class VMDisk:
                  driver_name="qemu",
                  driver_type="qcow2",
                  driver_cache="none",
-                 target_device="vda"):
+                 target_device="vda",
+                 target_bus="virtio"):
         self.source = source
         self.disk_type = disk_type
         self.disk_device = disk_device
@@ -188,6 +189,7 @@ class VMDisk:
         self.driver_type = driver_type
         self.driver_cache = driver_cache
         self.target_device = target_device
+        self.target_bus = target_bus
 
     @classmethod
     def deserialize(cls, desc):
@@ -200,7 +202,8 @@ class VMDisk:
         ET.SubElement(xml_top, 'source',
                       attrib={self.disk_type: self.source})
         ET.SubElement(xml_top, 'target',
-                      attrib={'dev': self.target_device})
+                      attrib={'dev': self.target_device,
+                              'bus': self.target_bus})
         ET.SubElement(xml_top, 'driver',
                       attrib={
                           'name': self.driver_name,
