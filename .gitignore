@@ -1,5 +1,25 @@
-#Loggin files
-example.log
+# Python bytecode:
+*.py[co]
 
-#Compiled / generated files
-*.pyc
+# Packaging files:
+*.egg*
+
+# Editor temp files:
+*.swp
+*.swo
+*~
+
+# Sphinx docs:
+build
+_build
+
+# SQLite3 database files:
+*.db
+
+# Logs:
+*.log
+.ropeproject
+celerybeat-schedule
+.coverage
+*,cover
+coverage.xml
