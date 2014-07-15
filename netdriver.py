@@ -245,7 +245,10 @@ def port_create(network):
 def port_delete(network):
     """ Remove port from bridge and remove rules from flow database. """
     # Clear all port rules
-    clear_port_rules(network)
+    try:
+        clear_port_rules(network)
+    except:
+        pass # Missing port (deleted already)
 
     if not native_ovs:
         # Delete port
