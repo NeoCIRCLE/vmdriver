@@ -91,9 +91,18 @@ class VMInstance:
             attrib={
                 'type': self.vm_type
             })
+        # Building raw data into xml
+        if self.raw_data:
+            xml_top.append(ET.fromstring(self.raw_data))
         # Basic virtual machine paramaters
         ET.SubElement(xml_top, 'name').text = self.name
         ET.SubElement(xml_top, 'vcpu').text = str(self.vcpu)
+        cpu = ET.SubElement(xml_top, 'cpu')
+        ET.SubElement(cpu, 'topology',
+                      attrib={
+                          'sockets': str(1),
+                          'cores': str(self.vcpu),
+                          'threads': str(1)})
         ET.SubElement(xml_top, 'memory').text = str(self.memory_max)
         ET.SubElement(xml_top, 'currentMemory').text = str(self.memory)
         # Cpu tune
@@ -143,9 +152,6 @@ class VMInstance:
         features = ET.SubElement(xml_top, 'features')
         if self.acpi:
             ET.SubElement(features, 'acpi')
-        # Building raw data into xml
-        if self.raw_data:
-            xml_top.append(ET.fromstring(self.raw_data))
         # Security label
         ET.SubElement(xml_top, 'seclabel', attrib={
             'type': self.seclabel_type,
