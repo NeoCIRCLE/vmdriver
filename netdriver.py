@@ -213,6 +213,10 @@ def port_create(network):
         add_tuntap_interface(network.name)
 
     if not native_ovs:
+        try:
+            del_port_from_bridge(network.name)
+        except:
+            pass
         # Create the port for virtual network
         add_port_to_bridge(network.name, network.bridge)
         # Set VLAN parameter for tap interface
