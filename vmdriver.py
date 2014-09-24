@@ -584,6 +584,15 @@ def detach_network(name, net):
 
 
 @celery.task
+@req_connection
+@wrap_libvirtError
+def resize_disk(name, path, size):
+    domain = lookupByName(name)
+    domain.blockResize(path, int(size),
+                       flags=libvirt.VIR_DOMAIN_BLOCK_RESIZE_BYTES)
+
+
+@celery.task
 def ping():
     return True
 
