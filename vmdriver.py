@@ -588,8 +588,10 @@ def detach_network(name, net):
 @wrap_libvirtError
 def resize_disk(name, path, size):
     domain = lookupByName(name)
-    domain.blockResize(path, int(size),
-                       flags=libvirt.VIR_DOMAIN_BLOCK_RESIZE_BYTES)
+    # domain.blockResize(path, int(size),
+    #                    flags=libvirt.VIR_DOMAIN_BLOCK_RESIZE_BYTES)
+    # To be compatible with libvirt < 0.9.11
+    domain.blockResize(path, int(size)/1024)
 
 
 @celery.task
