@@ -206,9 +206,9 @@ class shutdown(AbortableTask):
     time_limit = 120
 
     @req_connection
-    def run(self, **kwargs):
+    def run(self, args):
         from time import sleep
-        name = kwargs['name']
+        name, = args
         try:
             domain = lookupByName(name)
             domain.shutdown()
@@ -221,7 +221,7 @@ class shutdown(AbortableTask):
                     else:
                         raise
                 else:
-                    if self.is_aborted(**kwargs):
+                    if self.is_aborted():
                         logging.info("Shutdown aborted on vm: %s", name)
                         return
                     sleep(5)
