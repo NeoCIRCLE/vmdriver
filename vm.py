@@ -132,6 +132,18 @@ class VMInstance:
                       attrib={'mode': 'bind',
                               'path': '/var/lib/libvirt/serial/%s'
                               % self.name})
+        # Virtio console
+        virtio = ET.SubElement(devices,
+                               'channel',
+                               attrib={'type': 'unix'})
+        ET.SubElement(virtio,
+                      'target',
+                      attrib={'type': 'virtio', 'name': 'agent'})
+        ET.SubElement(virtio,
+                      'source',
+                      attrib={'mode': 'bind',
+                              'path': '/var/lib/libvirt/serial/vio-%s'
+                              % self.name})
         # Console/graphics section
         if self.graphics is not None:
             ET.SubElement(devices,
