@@ -619,10 +619,22 @@ def get_ram_size():
 
 
 @celery.task
+def get_driver_version():
+    from git import Repo
+    repo = Repo(path=os.getcwd())
+    lc = repo.log()[0]
+    return {'branch': repo.active_branch,
+            'commit': lc.id_abbrev,
+            'commit_text': lc.summary,
+            'is_dirty': repo.is_dirty}
+
+
+@celery.task
 def get_info():
     return {'core_num': get_core_num(),
             'ram_size': get_ram_size(),
-            'architecture': get_architecture()}
+            'architecture': get_architecture(),
+            'driver_version': get_driver_version()}
 
 
 @celery.task
