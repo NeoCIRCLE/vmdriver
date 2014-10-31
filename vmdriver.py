@@ -621,12 +621,16 @@ def get_ram_size():
 @celery.task
 def get_driver_version():
     from git import Repo
-    repo = Repo(path=os.getcwd())
-    lc = repo.log()[0]
-    return {'branch': repo.active_branch,
-            'commit': lc.id_abbrev,
-            'commit_text': lc.summary,
-            'is_dirty': repo.is_dirty}
+    try:
+        repo = Repo(path=os.getcwd())
+        lc = repo.log()[0]
+        return {'branch': repo.active_branch,
+                'commit': lc.id_abbrev,
+                'commit_text': lc.summary,
+                'is_dirty': repo.is_dirty}
+    except:
+        logging.exception("Unhandled exception: ")
+        return None
 
 
 @celery.task
