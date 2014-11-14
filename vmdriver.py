@@ -13,6 +13,7 @@ from psutil import NUM_CPUS, virtual_memory, cpu_percent
 from celery.contrib.abortable import AbortableTask
 
 from vm import VMInstance, VMDisk, VMNetwork
+
 from vmcelery import celery, lib_connection, to_bool
 
 sys.path.append(os.path.dirname(os.path.basename(__file__)))
@@ -550,6 +551,7 @@ def migrate(name, host, live=False):
 @req_connection
 @wrap_libvirtError
 def attach_disk(name, disk):
+    """ Attach Disk to a running virtual machine. """
     domain = lookupByName(name)
     disk = VMDisk.deserialize(disk)
     domain.attachDevice(disk.dump_xml())
@@ -559,9 +561,25 @@ def attach_disk(name, disk):
 @req_connection
 @wrap_libvirtError
 def detach_disk(name, disk):
+    """ Detach disk from a running virtual machine. """
     domain = lookupByName(name)
     disk = VMDisk.deserialize(disk)
     domain.detachDevice(disk.dump_xml())
+    # Libvirt does NOT report failed detach so test it.
+    __check_detach(domain, disk.source)
+
+
+def __check_detach(domain, disk):
+    """ Test if detach was successfull by searching
+    for disk in the XML"""
+    xml = domain.XMLDesc()
+    root = ET.fromstring(xml)
+    devices = root.find('devices')
+    for d in devices.findall("disk"):
+        if disk in d.find('source').attrib.values()[0]:
+            raise Exception("Disk could not been detached. "
+                            "Check if hot plug support is "
+                            "enabled (acpiphp module on Linux).")
 
 
 @celery.task
