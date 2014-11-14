@@ -578,7 +578,8 @@ def __check_detach(domain, disk):
     for d in devices.findall("disk"):
         if disk in d.find('source').attrib.values()[0]:
             raise Exception("Disk could not been detached. "
-                            "Check if acpiphp module is loaded.")
+                            "Check if hot plug support is "
+                            "enabled (acpiphp module on Linux).")
 
 
 @celery.task
