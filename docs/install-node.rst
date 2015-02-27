@@ -77,7 +77,6 @@ Save configuration to virtualenv and activate environment::
   export LIBVIRT_URI=test:///default
   export AMQP_URI=amqp://cloud:password@$(hostname)/circle
   export HYPERVISOR_TYPE=test 
-  export CACHE_URI=pylibmc://$(hostname):11211/
   END
 
 Copy the libvrit bindings to the local virtualenv directory::

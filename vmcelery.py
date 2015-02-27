@@ -24,7 +24,6 @@ else:
                         "Hostname format must be hostname.module.priority.")
 
 AMQP_URI = getenv('AMQP_URI')
-CACHE_URI = getenv('CACHE_URI')
 
 
 # Global configuration parameters declaration
@@ -42,8 +41,7 @@ celery = Celery('vmcelery',
                 include=['vmdriver'])
 
 celery.conf.update(
-    CELERY_RESULT_BACKEND='cache',
-    CELERY_CACHE_BACKEND=CACHE_URI,
+    CELERY_RESULT_BACKEND='amqp',
     CELERY_TASK_RESULT_EXPIRES=300,
     CELERY_QUEUES=(
         Queue(HOSTNAME, Exchange(
