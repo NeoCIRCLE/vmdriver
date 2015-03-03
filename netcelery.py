@@ -17,7 +17,6 @@ if HOSTNAME is None:
                     "Hostname format must be hostname.module.priority.")
 
 AMQP_URI = getenv('AMQP_URI')
-CACHE_URI = getenv('CACHE_URI')
 
 
 def to_bool(value):
@@ -37,8 +36,7 @@ celery = Celery('netcelery',
                 include=['netdriver'])
 
 celery.conf.update(
-    CELERY_RESULT_BACKEND='cache',
-    CELERY_CACHE_BACKEND=CACHE_URI,
+    CELERY_RESULT_BACKEND='amqp',
     CELERY_TASK_RESULT_EXPIRES=300,
     CELERY_QUEUES=(
         Queue(HOSTNAME, Exchange(
