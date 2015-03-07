@@ -1,0 +1,15 @@
+[Unit]
+Description=CIRCLE node
+After=network.target
+BindsTo=netcelery@net.fast.service
+BindsTo=vmcelery@vm.fast.service
+BindsTo=vmcelery@vm.slow.service
+BindsTo=agentdriver.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/bin/echo
+
+[Install]
+WantedBy=multi-user.target
