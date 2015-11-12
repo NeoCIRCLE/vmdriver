@@ -178,7 +178,7 @@ class VMInstance:
                            pretty_print=True)
 
 
-class VMDisk:
+class VMDisk(object):
 
     '''Virtual MAchine disk representing class
     '''
@@ -234,6 +234,80 @@ class VMDisk:
                            encoding='utf8',
                            method='xml',
                            pretty_print=True)
+
+
+class CephVMDisk(VMDisk):
+
+    '''Virtual MAchine disk over Ceph block representing class
+    '''
+
+    hosts = None
+    protocol = None
+    ceph_user = None
+    secret_uuid = None
+
+    def __init__(self,
+                 source,
+                 hosts,
+                 disk_device="disk",
+                 driver_name="qemu",
+                 driver_type="raw",
+                 driver_cache="none",
+                 target_device="vda",
+                 target_bus="virtio",
+                 protocol="rbd",
+                 ceph_user=None,
+                 secret_uuid=None):
+
+        super(CephVMDisk, self).__init__(
+            source=source,
+            disk_type="network",
+            disk_device=disk_device,
+            driver_name=driver_name,
+            driver_type=driver_type,
+            driver_cache=driver_cache,
+            target_device=target_device,
+            target_bus=target_bus)
+
+        self.hosts = hosts
+        self.protocol = protocol
+        self.ceph_user = ceph_user
+        self.secret_uuid = secret_uuid
+
+    @classmethod
+    def deserialize(cls, desc):
+        return cls(**desc)
+
+    def build_xml(self):
+        xml_top = super(CephVMDisk, self).build_xml()
+        xml_top.remove(xml_top[0])  # Removes the source tag
+
+        source = ET.SubElement(xml_top, "source",
+                               attrib={"name": self.source,
+                                       "protocol": self.protocol})
+
+        for host in self.hosts:
+            ET.SubElement(source, "host",
+                          attrib=self.__attrib_from_host(host))
+
+        if self.ceph_user is not None and self.secret_uuid is not None:
+            auth = ET.SubElement(xml_top, "auth",
+                                 attrib={"username": self.ceph_user})
+            ET.SubElement(auth, "secret",
+                          attrib={"type": "ceph", "uuid": self.secret_uuid})
+
+        return xml_top
+
+    def __attrib_from_host(self, host):
+        port_pos = host.rfind(':')
+        port = ""
+        name = host
+
+        if port_pos != -1 and port_pos < len(host):
+            port = host[port_pos+1:]
+            name = host[:port_pos]
+
+        return {"name": name, "port": port}
 
 
 class VMNetwork:
