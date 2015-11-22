@@ -12,7 +12,7 @@ from psutil import NUM_CPUS, virtual_memory, cpu_percent
 
 from celery.contrib.abortable import AbortableTask
 
-from vm import VMInstance, VMDisk, VMNetwork
+from vm import VMInstance, VMDisk, CephVMDisk, VMNetwork
 
 from vmcelery import celery, lib_connection, to_bool
 
@@ -550,20 +550,29 @@ def migrate(name, host, live=False):
 @celery.task
 @req_connection
 @wrap_libvirtError
-def attach_disk(name, disk):
+def attach_disk(name, disk_desc):
     """ Attach Disk to a running virtual machine. """
     domain = lookupByName(name)
-    disk = VMDisk.deserialize(disk)
+    disk = None
+    if disk_desc["data_store_type"] == "ceph_block":
+        disk = CephVMDisk.deserialize(disk_desc)
+    else:
+        disk = VMDisk.deserialize(disk_desc)
     domain.attachDevice(disk.dump_xml())
 
 
 @celery.task
 @req_connection
 @wrap_libvirtError
-def detach_disk(name, disk):
+def detach_disk(name, disk_desc):
     """ Detach disk from a running virtual machine. """
     domain = lookupByName(name)
-    disk = VMDisk.deserialize(disk)
+    disk = None
+    if disk_desc["data_store_type"] == "ceph_block":
+        disk = CephVMDisk.deserialize(disk_desc)
+    else:
+        disk = VMDisk.deserialize(disk_desc)
+
     domain.detachDevice(disk.dump_xml())
     # Libvirt does NOT report failed detach so test it.
     __check_detach(domain, disk.source)

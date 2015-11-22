@@ -76,7 +76,9 @@ class VMInstance:
 
     @classmethod
     def deserialize(cls, desc):
-        desc['disk_list'] = [VMDisk.deserialize(d) for d in desc['disk_list']]
+        desc['disk_list'] = [CephVMDisk.deserialize(d)
+                             if d["data_store_type"] == "ceph_block" else
+                             VMDisk.deserialize(d) for d in desc['disk_list']]
         desc['network_list'] = [VMNetwork.deserialize(
             n) for n in desc['network_list']]
         return cls(**desc)
@@ -211,6 +213,7 @@ class VMDisk(object):
 
     @classmethod
     def deserialize(cls, desc):
+        del desc["data_store_type"]
         return cls(**desc)
 
     def build_xml(self):
@@ -276,6 +279,7 @@ class CephVMDisk(VMDisk):
 
     @classmethod
     def deserialize(cls, desc):
+        del desc["data_store_type"]
         return cls(**desc)
 
     def build_xml(self):
@@ -286,9 +290,9 @@ class CephVMDisk(VMDisk):
                                attrib={"name": self.source,
                                        "protocol": self.protocol})
 
-        for host in self.hosts:
+        for name, port in self.hosts:
             ET.SubElement(source, "host",
-                          attrib=self.__attrib_from_host(host))
+                          attrib={"name": name, "port": unicode(port)})
 
         if self.ceph_user is not None and self.secret_uuid is not None:
             auth = ET.SubElement(xml_top, "auth",
@@ -297,17 +301,6 @@ class CephVMDisk(VMDisk):
                           attrib={"type": "ceph", "uuid": self.secret_uuid})
 
         return xml_top
-
-    def __attrib_from_host(self, host):
-        port_pos = host.rfind(':')
-        port = ""
-        name = host
-
-        if port_pos != -1 and port_pos < len(host):
-            port = host[port_pos+1:]
-            name = host[:port_pos]
-
-        return {"name": name, "port": port}
 
 
 class VMNetwork:
