@@ -11,4 +11,5 @@ TimeoutStopSec=600
 Restart=always
 
 WorkingDirectory=/home/cloud/vmdriver
-ExecStart=/bin/bash -c "source /etc/profile; workon vmdriver; exec celery -A vmcelery worker --loglevel=info -n %H.%I"
+
+ExecStart=/bin/bash -c "source /etc/profile; workon vmdriver; exec celery -A vmcelery worker --loglevel=info -n $(/bin/hostname -s).%I"
