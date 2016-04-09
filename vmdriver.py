@@ -650,13 +650,13 @@ def get_driver_version():
     from git import Repo
     try:
         repo = Repo(path=os.getcwd())
-        lc = repo.log()[0]
-        return {'branch': repo.active_branch,
-                'commit': lc.id_abbrev,
+        lc = repo.head.commit
+        return {'branch': repo.active_branch.name,
+                'commit': lc.hexsha,
                 'commit_text': lc.summary,
-                'is_dirty': repo.is_dirty}
-    except:
-        logging.exception("Unhandled exception: ")
+                'is_dirty': repo.is_dirty()}
+    except Exception as e:
+        logging.exception("Unhandled exception: %s", e)
         return None
 
 
