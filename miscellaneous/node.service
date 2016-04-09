@@ -4,6 +4,7 @@ After=network.target
 BindsTo=netcelery@net.fast.service
 BindsTo=vmcelery@vm.fast.service
 BindsTo=vmcelery@vm.slow.service
+BindsTo=privcelery@vm.priv.service
 BindsTo=agentdriver.service
 
 [Service]

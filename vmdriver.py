@@ -16,6 +16,12 @@ from vm import VMInstance, VMDisk, CephVMDisk, VMNetwork
 
 from vmcelery import celery, lib_connection, to_bool
 
+from ceph import (write_to_ceph_block_device,
+                  read_from_ceph_block_device,
+                  remove_temp_file)
+from util import get_priviliged_queue_name
+
+
 sys.path.append(os.path.dirname(os.path.basename(__file__)))
 
 vm_xml_dump = None
@@ -324,17 +330,31 @@ def suspend(name):
 @celery.task
 @req_connection
 @wrap_libvirtError
-def save(name, path):
+def save(name, data_store_type, dir, filename):
     """ Stop virtual machine and save its memory to path. """
-
     domain = lookupByName(name)
-    domain.save(path)
+    if data_store_type == "ceph_block":
+        try:
+            path = "/tmp/" + filename
+            domain.save(path)
+            queue_name = get_priviliged_queue_name()
+            write_to_ceph_block_device.apply_async(
+                args=[dir, filename], queue=queue_name).get(timeout=300)
+            remove_temp_file.apply_async(
+                args=[path], queue=queue_name).get(timeout=300)
+        except:
+            remove_temp_file.apply_async(
+                args=[path], queue=queue_name).get(timeout=300)
+            raise
+    else:
+        path = dir + "/" + filename
+        domain.save(path)
 
 
 @celery.task
 @req_connection
 @wrap_libvirtError
-def restore(name, path):
+def restore(name, data_store_type, dir, filename):
     """ Restore a saved virtual machine.
 
     Restores the virtual machine from the memory image
@@ -342,7 +362,18 @@ def restore(name, path):
     Return the domain info dict.
 
     """
-    Connection.get().restore(path)
+    if data_store_type == "ceph_block":
+        path = "/tmp/" + filename
+        queue_name = get_priviliged_queue_name()
+        read_from_ceph_block_device.apply_async(
+            args=[dir, filename], queue=queue_name).get(timeout=300)
+        Connection.get().restore(path)
+        remove_temp_file.apply_async(
+            args=[path], queue=queue_name).get(timeout=300)
+    else:
+        path = dir + "/" + filename
+        Connection.get().restore(path)
+
     return domain_info(name)
 
 
