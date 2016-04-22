@@ -1,8 +1,10 @@
 import rados
 import rbd
 import os
+import subprocess
 
-from privcelery import celery
+
+DUMP_SIZE_LIMIT = int(os.getenv("DUMP_SIZE_LIMIT", 20 * 1024 ** 3))  # 20GB
 
 
 class CephConnection:
@@ -33,59 +35,50 @@ class CephConnection:
         self.cluster.shutdown()
 
 
-@celery.task
-def write_to_ceph_block_device(poolname, diskname):
-    diskname = str(diskname)
-    path = "/tmp/" + diskname
-    statinfo = os.stat(path)
-    disk_size = statinfo.st_size
-    with open(path, "rb") as f:
-        with CephConnection(str(poolname)) as conn:
-            rbd_inst = rbd.RBD()
-            try:
-                rbd_inst.create(conn.ioctx, diskname, disk_size)
-            except rbd.ImageExists:
-                rbd_inst.remove(conn.ioctx, diskname)
-                rbd_inst.create(conn.ioctx, diskname, disk_size)
-
-            try:
-                with rbd.Image(conn.ioctx, diskname) as image:
-                    offset = 0
-                    data = f.read(4096)
-                    while data:
-                        offset += image.write(data, offset)
-                        data = f.read(4096)
-            except:
-                rbd_inst.remove(conn.ioctx, diskname)
-                raise
-
-
-@celery.task
-def read_from_ceph_block_device(poolname, diskname):
-    diskname = str(diskname)
-    path = "/tmp/" + diskname
+def sudo(*args):
     try:
-        with open(path, "wb") as f:
-            with CephConnection(str(poolname)) as conn:
-                with rbd.Image(conn.ioctx, diskname) as image:
-                    offset = 0
-                    size = image.size()
-                    while offset < size - 4096:
-                        data = image.read(offset, 4096)
-                        f.write(data)
-                        offset += 4096
-                    data = image.read(offset, size - offset)
-                    f.write(data)
-                rbd_inst = rbd.RBD()
-                rbd_inst.remove(conn.ioctx, diskname)
+        subprocess.check_output(["/bin/sudo"] + list(args))
+    except subprocess.CalledProcessError as e:
+        raise Exception(e)
+
+
+def map_rbd(ceph_path, local_path):
+    try:
+        sudo("/bin/rbd", "map", ceph_path)
     except:
-        with CephConnection(str(poolname)) as conn:
-            rbd_inst = rbd.RBD()
+        sudo("/bin/rbd", "unmap", local_path)
+        sudo("/bin/rbd", "map", ceph_path)
+
+
+def save(domain, poolname, diskname):
+    diskname = str(diskname)
+    poolname = str(poolname)
+    ceph_path = "%s/%s" % (poolname, diskname)
+    local_path = "/dev/rbd/" + ceph_path
+    disk_size = DUMP_SIZE_LIMIT
+
+    with CephConnection(poolname) as conn:
+        rbd_inst = rbd.RBD()
+        try:
+            rbd_inst.create(conn.ioctx, diskname, disk_size)
+        except rbd.ImageExists:
             rbd_inst.remove(conn.ioctx, diskname)
-        remove_temp_file(path)
-        raise
+            rbd_inst.create(conn.ioctx, diskname, disk_size)
+        try:
+            map_rbd(ceph_path, local_path)
+            domain.save(local_path)
+        except:
+            rbd_inst.remove(conn.ioctx, diskname)
+            raise
 
 
-@celery.task
-def remove_temp_file(path):
-    os.unlink(path)
+def restore(connection, poolname, diskname):
+    diskname = str(diskname)
+    poolname = str(poolname)
+    local_path = "/dev/rbd/%s/%s" % (poolname, diskname)
+
+    connection.restore(local_path)
+    sudo("/bin/rbd", "unmap", local_path)
+    with CephConnection(poolname) as conn:
+        rbd_inst = rbd.RBD()
+        rbd_inst.remove(conn.ioctx, diskname)
