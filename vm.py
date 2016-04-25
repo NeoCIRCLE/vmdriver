@@ -241,13 +241,8 @@ class VMDisk(object):
 
 class CephVMDisk(VMDisk):
 
-    '''Virtual MAchine disk over Ceph block representing class
+    '''Class representing Virtual Machine disk over a Ceph block device
     '''
-
-    hosts = None
-    protocol = None
-    ceph_user = None
-    secret_uuid = None
 
     def __init__(self,
                  source,

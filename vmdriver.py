@@ -318,7 +318,6 @@ def suspend(name):
     Return the domain info dict.
 
     """
-
     domain = lookupByName(name)
     domain.suspend()
     return _parse_info(domain.info())
@@ -333,7 +332,7 @@ def save(name, data_store_type, dir, filename):
     if data_store_type == "ceph_block":
         ceph.save(domain, dir, filename)
     else:
-        path = dir + "/" + filename
+        path = os.path.join(dir, filename)
         domain.save(path)
 
 
@@ -351,7 +350,7 @@ def restore(name, data_store_type, dir, filename):
     if data_store_type == "ceph_block":
         ceph.restore(Connection.get(), dir, filename)
     else:
-        path = dir + "/" + filename
+        path = os.path.join(dir, filename)
         Connection.get().restore(path)
 
     return domain_info(name)
@@ -564,7 +563,6 @@ def migrate(name, host, live=False):
 def attach_disk(name, disk_desc):
     """ Attach Disk to a running virtual machine. """
     domain = lookupByName(name)
-    disk = None
     if disk_desc["data_store_type"] == "ceph_block":
         disk = CephVMDisk.deserialize(disk_desc)
     else:
@@ -578,7 +576,6 @@ def attach_disk(name, disk_desc):
 def detach_disk(name, disk_desc):
     """ Detach disk from a running virtual machine. """
     domain = lookupByName(name)
-    disk = None
     if disk_desc["data_store_type"] == "ceph_block":
         disk = CephVMDisk.deserialize(disk_desc)
     else:

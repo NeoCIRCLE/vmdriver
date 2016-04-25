@@ -36,10 +36,7 @@ class CephConnection:
 
 
 def sudo(*args):
-    try:
-        subprocess.check_output(["/bin/sudo"] + list(args))
-    except subprocess.CalledProcessError as e:
-        raise Exception(e)
+    subprocess.check_output(["/bin/sudo"] + list(args))
 
 
 def map_rbd(ceph_path, local_path):
