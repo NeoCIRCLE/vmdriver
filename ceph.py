@@ -50,8 +50,8 @@ def map_rbd(ceph_path, local_path):
 def save(domain, poolname, diskname):
     diskname = str(diskname)
     poolname = str(poolname)
-    ceph_path = "%s/%s" % (poolname, diskname)
-    local_path = "/dev/rbd/" + ceph_path
+    ceph_path = os.path.join(poolname, diskname)
+    local_path = os.path.join("/dev/rbd", ceph_path)
     disk_size = DUMP_SIZE_LIMIT
 
     with CephConnection(poolname) as conn:
@@ -67,13 +67,17 @@ def save(domain, poolname, diskname):
         except:
             rbd_inst.remove(conn.ioctx, diskname)
             raise
+        finally:
+            sudo("/bin/rbd", "unmap", local_path)
 
 
 def restore(connection, poolname, diskname):
     diskname = str(diskname)
     poolname = str(poolname)
-    local_path = "/dev/rbd/%s/%s" % (poolname, diskname)
+    ceph_path = os.path.join(poolname, diskname)
+    local_path = os.path.join("/dev/rbd", ceph_path)
 
+    map_rbd(ceph_path, local_path)
     connection.restore(local_path)
     sudo("/bin/rbd", "unmap", local_path)
     with CephConnection(poolname) as conn:
