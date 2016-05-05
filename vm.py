@@ -246,7 +246,7 @@ class CephVMDisk(VMDisk):
 
     def __init__(self,
                  source,
-                 hosts,
+                 endpoints,
                  disk_device="disk",
                  driver_name="qemu",
                  driver_type="raw",
@@ -267,7 +267,7 @@ class CephVMDisk(VMDisk):
             target_device=target_device,
             target_bus=target_bus)
 
-        self.hosts = hosts
+        self.endpoints = endpoints
         self.protocol = protocol
         self.ceph_user = ceph_user
         self.secret_uuid = secret_uuid
@@ -285,7 +285,7 @@ class CephVMDisk(VMDisk):
                                attrib={"name": self.source,
                                        "protocol": self.protocol})
 
-        for name, port in self.hosts:
+        for name, port in self.endpoints:
             ET.SubElement(source, "host",
                           attrib={"name": name, "port": unicode(port)})
 
