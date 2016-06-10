@@ -156,6 +156,18 @@ class VMInstance:
                               # TODO: Add this as option
                           })
             ET.SubElement(devices,
+                          'graphics',
+                          attrib={
+                              'type': 'spice',
+                              'listen': '0.0.0.0',
+                              'port': '3001'
+                          })
+            qxlvideo = ET.SubElement(devices, 'video')
+            ET.SubElement(qxlvideo,
+                          'model',
+                          attrib={'type': 'qxl'})
+
+            ET.SubElement(devices,
                           'input',
                           attrib={
                               'type': 'tablet',
