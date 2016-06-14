@@ -2,7 +2,14 @@ import rados
 import rbd
 import os
 import subprocess
+import libvirt
+import lxml.etree as ET
+from base64 import b64decode
+import logging
 
+from util import req_connection, wrap_libvirtError, Connection
+
+logger = logging.getLogger(__name__)
 
 DUMP_SIZE_LIMIT = int(os.getenv("DUMP_SIZE_LIMIT", 20 * 1024 ** 3))  # 20GB
 
@@ -83,3 +90,60 @@ def restore(connection, poolname, diskname):
     with CephConnection(poolname) as conn:
         rbd_inst = rbd.RBD()
         rbd_inst.remove(conn.ioctx, diskname)
+
+
+def generate_secret_xml(user):
+    xml = ET.Element(
+        "secret",
+        attrib={
+            "ephemeral": "no",
+            "private": "no",
+        })
+    ET.SubElement(xml, "description").text = "CEPH passpharse for " + user
+    usage = ET.SubElement(xml, "usage", attrib={"type": "ceph"})
+    ET.SubElement(usage, "name").text = user
+    return ET.tostring(xml,
+                       encoding='utf8',
+                       method='xml',
+                       pretty_print=True)
+
+
+@req_connection
+@wrap_libvirtError
+def find_secret(user):
+    conn = Connection.get()
+    try:
+        return conn.secretLookupByUsage(
+            libvirt.VIR_SECRET_USAGE_TYPE_CEPH, user)
+    except libvirt.libvirtError as e:
+        if e.get_error_code() == libvirt.VIR_ERR_NO_SECRET:
+            return None
+        raise
+
+
+@req_connection
+@wrap_libvirtError
+def create_secret(user, secretkey):
+    xml = generate_secret_xml(user)
+    conn = Connection.get()
+    secret = conn.secretDefineXML(xml)
+    decoded_key = b64decode(secretkey)
+    secret.setValue(decoded_key)
+    logger.info("Secret generated with uuid: '%s'", secret.UUIDString())
+    return secret
+
+
+@wrap_libvirtError
+def delete_secret(user):
+    secret = find_secret(user)
+    if secret is not None:
+        secret.undefine()
+        logger.info("Secret with uuid: '%s' deleted", secret.UUIDString())
+
+
+def check_secret(user, secretkey):
+    secret = find_secret(user)
+    if secret is None:
+        secret = create_secret(user, secretkey)
+
+    return secret.UUIDString()
