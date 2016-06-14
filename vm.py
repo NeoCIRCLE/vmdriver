@@ -1,7 +1,7 @@
 import lxml.etree as ET
 
 from vmcelery import native_ovs
-from ceph import check_secret
+from ceph import check_secret, get_endpoints
 
 # VM Instance class
 
@@ -246,7 +246,6 @@ class CephVMDisk(VMDisk):
 
     def __init__(self,
                  source,
-                 endpoints,
                  disk_device="disk",
                  driver_name="qemu",
                  driver_type="raw",
@@ -254,8 +253,7 @@ class CephVMDisk(VMDisk):
                  target_device="vda",
                  target_bus="virtio",
                  protocol="rbd",
-                 ceph_user=None,
-                 secret=None):
+                 ceph_user=None):
 
         super(CephVMDisk, self).__init__(
             source=source,
@@ -267,12 +265,11 @@ class CephVMDisk(VMDisk):
             target_device=target_device,
             target_bus=target_bus)
 
-        self.endpoints = endpoints
         self.protocol = protocol
         self.ceph_user = ceph_user
-        self.secret = secret
-        if ceph_user is not None and secret is not None:
-            check_secret(ceph_user, secret)
+        if ceph_user is not None:
+            check_secret(ceph_user)
+        self.endpoints = get_endpoints(ceph_user)
 
     @classmethod
     def deserialize(cls, desc):
@@ -291,7 +288,7 @@ class CephVMDisk(VMDisk):
             ET.SubElement(source, "host",
                           attrib={"name": name, "port": unicode(port)})
 
-        if self.ceph_user is not None and self.secret is not None:
+        if self.ceph_user is not None:
             auth = ET.SubElement(
                 xml_top,
                 "auth",

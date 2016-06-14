@@ -586,6 +586,6 @@ def get_node_metrics():
 
 
 @celery.task
-def refresh_secret(user, secret):
+def refresh_secret(user):
     ceph.delete_secret(user)
-    ceph.check_secret(user, secret)
+    ceph.check_secret(user)
