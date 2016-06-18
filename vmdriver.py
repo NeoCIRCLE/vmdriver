@@ -227,11 +227,11 @@ def suspend(name):
 @celery.task
 @req_connection
 @wrap_libvirtError
-def save(name, data_store_type, dir, filename):
+def save(name, data_store_type, dir, filename, ceph_user=None):
     """ Stop virtual machine and save its memory to path. """
     domain = lookupByName(name)
     if data_store_type == "ceph_block":
-        ceph.save(domain, dir, filename)
+        ceph.save(domain, dir, filename, ceph_user)
     else:
         path = os.path.join(dir, filename)
         domain.save(path)
@@ -240,7 +240,7 @@ def save(name, data_store_type, dir, filename):
 @celery.task
 @req_connection
 @wrap_libvirtError
-def restore(name, data_store_type, dir, filename):
+def restore(name, data_store_type, dir, filename, ceph_user=None):
     """ Restore a saved virtual machine.
 
     Restores the virtual machine from the memory image
@@ -249,7 +249,7 @@ def restore(name, data_store_type, dir, filename):
 
     """
     if data_store_type == "ceph_block":
-        ceph.restore(Connection.get(), dir, filename)
+        ceph.restore(Connection.get(), dir, filename, ceph_user)
     else:
         path = os.path.join(dir, filename)
         Connection.get().restore(path)

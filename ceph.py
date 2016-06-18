@@ -23,18 +23,12 @@ class CephConfig:
 
     def __init__(self, user=None, config_path=None, keyring_path=None):
 
-        self.user = user
-        self.config_path = config_path
-        self.keyring_path = keyring_path
-
-        if user is None:
-            self.user = "admin"
-        if config_path is None:
-            self.config_path = os.getenv("CEPH_CONFIG",
-                                         "/etc/ceph/ceph.conf")
-        if keyring_path is None:
-            default_keyring = "/etc/ceph/ceph.client.%s.keyring" % self.user
-            self.keyring_path = os.getenv("CEPH_KEYRING", default_keyring)
+        self.user = user or "admin"
+        self.config_path = (
+            config_path or os.getenv("CEPH_CONFIG", "/etc/ceph/ceph.conf"))
+        default_keyring = "/etc/ceph/ceph.client.%s.keyring" % self.user
+        self.keyring_path = (
+            keyring_path or os.getenv("CEPH_KEYRING", default_keyring))
 
     def cmd_args(self):
         return ["--keyring", self.keyring_path,
@@ -44,14 +38,10 @@ class CephConfig:
 
 class CephConnection:
 
-    def __init__(self, pool_name, conf=None):
+    def __init__(self, pool_name, conf=None, **kwargs):
 
         self.pool_name = pool_name
-        self.conf = conf
-
-        if conf is None:
-            self.conf = CephConfig()
-
+        self.conf = conf or CephConfig(**kwargs)
         self.cluster = None
         self.ioctx = None
 
@@ -90,10 +80,10 @@ def map_rbd(conf, ceph_path, local_path):
         sudo("/bin/rbd", "map", ceph_path, *conf.cmd_args())
 
 
-def get_secret_key(conf, user):
-    return subprocess.check_output((["/bin/ceph",
-                                     "auth", "print-key", "client.%s" % user]
-                                    + conf.cmd_args()))
+def get_secret_key(conf):
+    return subprocess.check_output(
+        (["/bin/ceph", "auth", "print-key", "client.%s" % conf.user] +
+         conf.cmd_args()))
 
 
 def parse_endpoint(mon):
@@ -102,9 +92,8 @@ def parse_endpoint(mon):
 
 
 def _get_endpoints(conf):
-    output = subprocess.check_output((["/bin/ceph",
-                                       "mon", "dump", "--format=json"]
-                                      + conf.cmd_args()))
+    output = subprocess.check_output(
+        (["/bin/ceph", "mon", "dump", "--format=json"] + conf.cmd_args()))
     mon_data = json.loads(output)
     mons = mon_data["mons"]
     return map(parse_endpoint, mons)
@@ -115,14 +104,14 @@ def get_endpoints(user):
     return _get_endpoints(conf)
 
 
-def save(domain, poolname, diskname):
+def save(domain, poolname, diskname, user):
     diskname = str(diskname)
     poolname = str(poolname)
     ceph_path = os.path.join(poolname, diskname)
     local_path = os.path.join("/dev/rbd", ceph_path)
     disk_size = DUMP_SIZE_LIMIT
 
-    with CephConnection(poolname) as conn:
+    with CephConnection(poolname, user=user) as conn:
         rbd_inst = rbd.RBD()
         try:
             rbd_inst.create(conn.ioctx, diskname, disk_size)
@@ -139,16 +128,16 @@ def save(domain, poolname, diskname):
             unmap_rbd(conn.conf, local_path)
 
 
-def restore(connection, poolname, diskname):
+def restore(libvirt_conn, poolname, diskname, user):
     diskname = str(diskname)
     poolname = str(poolname)
     ceph_path = os.path.join(poolname, diskname)
     local_path = os.path.join("/dev/rbd", ceph_path)
-
-    map_rbd(connection.conf, ceph_path, local_path)
-    connection.restore(local_path)
-    unmap_rbd(connection.conf, local_path)
-    with CephConnection(poolname) as conn:
+    config = CephConfig(user=user)
+    map_rbd(config, ceph_path, local_path)
+    libvirt_conn.restore(local_path)
+    unmap_rbd(config, local_path)
+    with CephConnection(poolname, conf=config) as conn:
         rbd_inst = rbd.RBD()
         rbd_inst.remove(conn.ioctx, diskname)
 
@@ -185,8 +174,8 @@ def find_secret(user):
 @req_connection
 @wrap_libvirtError
 def create_secret(user):
-    conf = CephConfig()
-    secretkey = get_secret_key(conf, user)
+    conf = CephConfig(user=user)
+    secretkey = get_secret_key(conf)
 
     xml = generate_secret_xml(user)
     conn = Connection.get()
