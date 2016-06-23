@@ -176,6 +176,8 @@ def find_secret(user):
 def create_secret(user):
     conf = CephConfig(user=user)
     secretkey = get_secret_key(conf)
+    if secretkey is None:
+        raise Exception("Secret file not found.")
 
     xml = generate_secret_xml(user)
     conn = Connection.get()
