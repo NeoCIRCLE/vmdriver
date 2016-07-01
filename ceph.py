@@ -88,7 +88,7 @@ def get_secret_key(conf):
 
 
 def parse_endpoint(mon):
-    m = mon_regex_ipv6.match(mon["addr"]) or mon_regex_ipv4(mon["addr"])
+    m = mon_regex_ipv6.match(mon["addr"]) or mon_regex_ipv4.match(mon["addr"])
     return (m.group("address"), m.group("port"))
 
 
