@@ -16,7 +16,8 @@ logger = logging.getLogger(__name__)
 
 DUMP_SIZE_LIMIT = int(os.getenv("DUMP_SIZE_LIMIT", 20 * 1024 ** 3))  # 20GB
 
-mon_regex = re.compile(r"^\[(?P<address>.+)\]\:(?P<port>\d+).*$")
+mon_regex_ipv6 = re.compile(r"^\[(?P<address>.+)\]\:(?P<port>\d+).*$")
+mon_regex_ipv4 = re.compile(r"^(?P<address>.+)\:(?P<port>\d+).*$")
 
 
 class CephConfig:
@@ -65,35 +66,35 @@ class CephConnection:
 
 
 def sudo(*args):
-    subprocess.check_output(["/bin/sudo"] + list(args))
+    subprocess.check_output(["/usr/bin/sudo"] + list(args))
 
 
 def unmap_rbd(conf, local_path):
-    sudo("/bin/rbd", "unmap", local_path, *conf.cmd_args())
+    sudo("/usr/bin/rbd", "unmap", local_path, *conf.cmd_args())
 
 
 def map_rbd(conf, ceph_path, local_path):
     try:
-        sudo("/bin/rbd", "map", ceph_path, *conf.cmd_args())
+        sudo("/usr/bin/rbd", "map", ceph_path, *conf.cmd_args())
     except:
         unmap_rbd(conf, local_path)
-        sudo("/bin/rbd", "map", ceph_path, *conf.cmd_args())
+        sudo("/usr/bin/rbd", "map", ceph_path, *conf.cmd_args())
 
 
 def get_secret_key(conf):
     return subprocess.check_output(
-        (["/bin/ceph", "auth", "print-key", "client.%s" % conf.user] +
+        (["/usr/bin/ceph", "auth", "print-key", "client.%s" % conf.user] +
          conf.cmd_args()))
 
 
 def parse_endpoint(mon):
-    m = mon_regex.match(mon["addr"])
+    m = mon_regex_ipv6.match(mon["addr"]) or mon_regex_ipv4(mon["addr"])
     return (m.group("address"), m.group("port"))
 
 
 def _get_endpoints(conf):
     output = subprocess.check_output(
-        (["/bin/ceph", "mon", "dump", "--format=json"] + conf.cmd_args()))
+        (["/usr/bin/ceph", "mon", "dump", "--format=json"] + conf.cmd_args()))
     mon_data = json.loads(output)
     mons = mon_data["mons"]
     return map(parse_endpoint, mons)
