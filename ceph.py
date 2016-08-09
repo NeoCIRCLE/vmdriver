@@ -82,9 +82,13 @@ def map_rbd(conf, ceph_path, local_path):
 
 
 def get_secret_key(conf):
-    return subprocess.check_output(
-        (["/usr/bin/ceph", "auth", "print-key", "client.%s" % conf.user] +
-         conf.cmd_args()))
+    try:
+        return subprocess.check_output(
+            (["/usr/bin/ceph", "auth", "print-key", "client.%s" % conf.user] +
+             conf.cmd_args()))
+    except subprocess.CalledProcessError as e:
+        logger.error(e)
+    return None
 
 
 def parse_endpoint(mon):
