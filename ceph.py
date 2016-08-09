@@ -14,8 +14,6 @@ from util import req_connection, wrap_libvirtError, Connection
 
 logger = logging.getLogger(__name__)
 
-DUMP_SIZE_LIMIT = int(os.getenv("DUMP_SIZE_LIMIT", 20 * 1024 ** 3))  # 20GB
-
 mon_regex_ipv6 = re.compile(r"^\[(?P<address>.+)\]\:(?P<port>\d+).*$")
 mon_regex_ipv4 = re.compile(r"^(?P<address>.+)\:(?P<port>\d+).*$")
 
@@ -109,12 +107,12 @@ def get_endpoints(user):
     return _get_endpoints(conf)
 
 
-def save(domain, poolname, diskname, user):
+def save(domain, poolname, diskname, ram_size, user):
     diskname = str(diskname)
     poolname = str(poolname)
     ceph_path = os.path.join(poolname, diskname)
     local_path = os.path.join("/dev/rbd", ceph_path)
-    disk_size = DUMP_SIZE_LIMIT
+    disk_size = (ram_size + 100) * 1024 ** 2  # +100MB provision
 
     with CephConnection(poolname, user=user) as conn:
         rbd_inst = rbd.RBD()
