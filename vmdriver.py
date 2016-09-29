@@ -210,9 +210,12 @@ class shutdown(AbortableTask):
     def run(self, args):
         from time import sleep
         name, = args
+        logging.info("Shutdown started for vm: %s", name)
         try:
             domain = lookupByName(name)
+            logging.info("%s domain found in shutdown", name)
             domain.shutdown()
+            logging.info("Domain shutdown called for vm: %s", name)
             while True:
                 try:
                     Connection.get().lookupByName(name)
