@@ -63,6 +63,8 @@ def build_flow_rule(
         protocol=None,
         nw_src=None,
         ipv6_src=None,
+        icmp_type=None,
+        nd_target=None,
         tp_dst=None,
         priority=None,
         actions=None):
@@ -74,6 +76,8 @@ def build_flow_rule(
     protocol    - Protocol for the rule like ip,ipv6,arp,udp,tcp
     nw_src      - Source network IP(v4)
     ipv6_src    - Source network IP(v6)
+    icmp_type   - ICMP/ICMPv6 type
+    nd_target   - IPv6 Neighbor Discovery target IP(v6)
     tp_dst      - Destination port
     priority    - Rule priority
     actions     - Action for the matching rule
@@ -89,6 +93,8 @@ def build_flow_rule(
                   ('%s', protocol),
                   ('nw_src=%s', nw_src),
                   ('ipv6_src=%s', ipv6_src),
+                  ('icmp_type=%s', icmp_type),
+                  ('nd_target=%s', nd_target),
                   ('tp_dst=%s', tp_dst),
                   ('priority=%s', priority),
                   ('actions=%s', actions)]
@@ -158,12 +164,30 @@ def ipv4_filter(network, port_number, remove=False):
 
 def ipv6_filter(network, port_number, remove=False):
     """ Apply/Remove ipv6 filter rule to network.  """
+
+    LINKLOCAL_SUBNET = "FE80::/64"
+    ICMPv6_NA = "136"  # The type of IPv6 Neighbor Advertisement
+
     if not remove:
+        # Enable Neighbor Advertisement from linklocal address
+        # if target ip same as network.ipv6
+        flow_cmd = build_flow_rule(in_port=port_number, dl_src=network.mac,
+                                   protocol="icmp6", ipv6_src=LINKLOCAL_SUBNET,
+                                   icmp_type=ICMPv6_NA,
+                                   nd_target=network.ipv6,
+                                   priority=42001, actions="normal")
+        ofctl_command_execute(["add-flow", network.bridge, flow_cmd])
+
+        # Enable traffic from valid source
         flow_cmd = build_flow_rule(in_port=port_number, dl_src=network.mac,
                                    protocol="ipv6", ipv6_src=network.ipv6,
                                    priority=42000, actions="normal")
         ofctl_command_execute(["add-flow", network.bridge, flow_cmd])
     else:
+        flow_cmd = build_flow_rule(in_port=port_number, dl_src=network.mac,
+                                   protocol="icmp6", ipv6_src=LINKLOCAL_SUBNET,
+                                   icmp_type=ICMPv6_NA,
+                                   nd_target=network.ipv6)
         flow_cmd = build_flow_rule(in_port=port_number, dl_src=network.mac,
                                    protocol="ipv6", ipv6_src=network.ipv6)
         ofctl_command_execute(["del-flows", network.bridge, flow_cmd])
