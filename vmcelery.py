@@ -9,6 +9,7 @@ from argparse import ArgumentParser
 def to_bool(value):
     return value.lower() in ("true", "yes", "y", "t")
 
+
 if to_bool(getenv("LIBVIRT_TEST", "False")):
     HOSTNAME = "vmdriver.test"
 else:
