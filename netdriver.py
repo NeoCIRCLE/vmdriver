@@ -188,6 +188,8 @@ def ipv6_filter(network, port_number, remove=False):
                                    protocol="icmp6", ipv6_src=LINKLOCAL_SUBNET,
                                    icmp_type=ICMPv6_NA,
                                    nd_target=network.ipv6)
+        ofctl_command_execute(["del-flows", network.bridge, flow_cmd])
+
         flow_cmd = build_flow_rule(in_port=port_number, dl_src=network.mac,
                                    protocol="ipv6", ipv6_src=network.ipv6)
         ofctl_command_execute(["del-flows", network.bridge, flow_cmd])
