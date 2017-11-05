@@ -245,6 +245,7 @@ class VMNetwork:
     ipv4            -- the IPv4 address of virtual machine (Flow control)
     ipv6            -- the IPv6 address of virtual machine (Flow controlo)
     vlan            -- Port VLAN configuration
+    vxlan           -- Port VXLAN configuration
     network_type    -- need to be "ethernet" by default
     model           -- available models in libvirt
     QoS             -- CIRCLE QoS class?
@@ -262,6 +263,7 @@ class VMNetwork:
     script_exec = '/bin/true'
     comment = None
     vlan = 0
+    vxlan = None
     ipv4 = None
     ipv6 = None
     managed = False
@@ -277,6 +279,7 @@ class VMNetwork:
                  model='virtio',
                  QoS=None,
                  vlan=0,
+                 vxlan=None,
                  managed=False):
         self.name = name
         self.bridge = bridge
@@ -296,6 +299,7 @@ class VMNetwork:
             self.virtual_port = virtual_port
         self.QoS = QoS
         self.vlan = vlan
+        self.vxlan = vxlan
         self.managed = managed
 
     @classmethod
@@ -305,7 +309,9 @@ class VMNetwork:
     # XML dump
     def build_xml(self):
         xml_top = ET.Element('interface', attrib={'type': self.network_type})
-        if self.vlan > 0 and self.network_type == "bridge":
+        if (self.vlan > 0
+           and self.network_type == "bridge"
+           and self.vxlan is None):
             xml_vlan = ET.SubElement(xml_top, 'vlan')
             ET.SubElement(xml_vlan, 'tag', attrib={'id': str(self.vlan)})
         if self.network_type == "bridge":
@@ -315,6 +321,8 @@ class VMNetwork:
         if self.virtual_port is not None:
             ET.SubElement(xml_top, 'virtualport',
                           attrib={'type': self.virtual_port})
+        if self.vxlan is not None:
+            ET.SubElement(xml_top, 'mtu', attrib={'size': '1450'})
         ET.SubElement(xml_top, 'target', attrib={'dev': self.name})
         ET.SubElement(xml_top, 'mac', attrib={'address': self.mac})
         ET.SubElement(xml_top, 'model', attrib={'type': self.model})
