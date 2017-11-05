@@ -21,6 +21,10 @@ def delete(network):
     port_delete(VMNetwork.deserialize(network))
 
 
+class InterfaceException(Exception):
+    pass
+
+
 def add_tuntap_interface(if_name):
     """ For testing purpose only adding tuntap interface. """
     subprocess.call(['sudo', 'ip', 'tuntap', 'add', 'mode', 'tap', if_name])
@@ -120,9 +124,9 @@ def add_port_to_bridge(network_name, bridge):
     ovs_command_execute(cmd_list)
 
 
-def del_port_from_bridge(network_name):
+def del_port_from_bridge(network_name, bridge):
     """ Delete network_name port. """
-    ovs_command_execute(['del-port', network_name])
+    ovs_command_execute(['del-port', bridge, network_name])
 
 
 def mac_filter(network, port_number, remove=False):
@@ -232,19 +236,83 @@ def disable_all_not_allowed_trafic(network, port_number, remove=False):
         ofctl_command_execute(["del-flows", network.bridge, flow_cmd])
 
 
+def bridge_create(bridge_name):
+    """ Creates a bridge if it doesn't exist. """
+    # Check bridge's existing
+    if ovs_command_execute(["br-exists", bridge_name]) != 0:
+        ovs_command_execute(["add-br", bridge_name])
+        if pull_up_interface(bridge_name) != 0:
+            raise InterfaceException("Cannot create bridge: %s!" % bridge_name)
+
+
+def create_vxlan_interface(name, vni, target_name):
+    """ Creates a VXLAN interface uses the multicast group 239.1.1.1
+    over target_name to handle traffic for which there is no
+    entry in the forwarding table.  The destination port number is set to
+    the IANA-assigned value of 4789.
+    """
+    mulitcast_subnet = "239.1.1.1"
+    dstport = "4789"  # IANA-assigned value
+    command = ["sudo", "ip", "link", "add", name, "type", "vxlan",
+               "id", str(vni), "group", mulitcast_subnet,
+               "dev", target_name, "dstport", dstport]
+    return_val = subprocess.call(command)
+    logging.info('IP command: %s executed.', command)
+    return return_val
+
+
+def add_vxlan_gateway_to_bridge(src_bridge, vxlan, vlan, gw_bridge):
+    """ Connects two bridge with a 802.1Q and VXLAN encapsulation.
+
+    Creates a 802.1Q interface (GW) and a VXLAN interface (XGW).
+    GW is the base interface of XGW.
+    Connects GW to the gw_bridge and XGW to the src_bridge.
+    """
+    vlan_gw_name = "%s-gw" % src_bridge
+    vxlan_gw_name = "%s-xgw" % src_bridge
+    # Add port to gateway bridge with proper vlan tag
+    ovs_command_execute(["add-port", gw_bridge, vlan_gw_name, "tag=%s" % vlan,
+                         "--", "set", "Interface", vlan_gw_name,
+                         "type=internal"])
+    if pull_up_interface(vlan_gw_name) == 0:
+        create_vxlan_interface(vxlan_gw_name, vxlan, vlan_gw_name)
+        if pull_up_interface(vxlan_gw_name) == 0:
+            add_port_to_bridge(vxlan_gw_name, src_bridge)
+        else:
+            raise InterfaceException("Cannot create interface: %s"
+                                     % vxlan_gw_name)
+    else:
+        raise InterfaceException("Cannot create interface: %s" % vlan_gw_name)
+
+
+def setup_user_network(network):
+    """ Creates a bridge for user network and connect
+    to the main bridge with a 802.1Q tagged VXLAN interface. """
+    MAIN_BRIDGE = "cloud"
+    bridge_create(network.bridge)
+    add_vxlan_gateway_to_bridge(network.bridge, network.vxlan,
+                                network.vlan, MAIN_BRIDGE)
+
+
 def port_create(network):
     """ Adding port to bridge apply rules and pull up interface. """
     # For testing purpose create tuntap iface
+    is_user_net = network.vxlan is not None
+
     if driver == "test":
         add_tuntap_interface(network.name)
 
+    if is_user_net:
+        setup_user_network(network)
+
     if not native_ovs:
         try:
-            del_port_from_bridge(network.name)
+            del_port_from_bridge(network.name, network.bridge)
         except:
             pass
         # Create the port for virtual network
         add_port_to_bridge(network.name, network.bridge)
+
         # Set VLAN parameter for tap interface
         set_port_vlan(network.name, network.vlan)
 
@@ -264,12 +332,14 @@ def port_create(network):
             ipv6_filter(network, port_number)
         arp_filter(network, port_number)
         enable_dhcp_client(network, port_number)
-    else:
+        # Explicit deny all other traffic
+        disable_all_not_allowed_trafic(network, port_number)
+    elif not is_user_net:
         # Allow all traffic from source MAC address
         mac_filter(network, port_number)
-    # Explicit deny all other traffic
-    disable_all_not_allowed_trafic(network, port_number)
-    pull_up_interface(network)
+        # Explicit deny all other traffic
+        disable_all_not_allowed_trafic(network, port_number)
+    pull_up_interface(network.name)
 
 
 def port_delete(network):
@@ -282,7 +352,7 @@ def port_delete(network):
 
     if not native_ovs:
         # Delete port
-        del_port_from_bridge(network.name)
+        del_port_from_bridge(network.name, network.bridge)
 
     # For testing purpose dele tuntap iface
     if driver == "test":
@@ -296,13 +366,13 @@ def clear_port_rules(network):
     ofctl_command_execute(["del-flows", network.bridge, flow_cmd])
 
 
-def pull_up_interface(network):
+def pull_up_interface(name):
     """ Pull up interface named network.
 
     return command output
 
     """
-    command = ['sudo', 'ip', 'link', 'set', 'up', network.name]
+    command = ['sudo', 'ip', 'link', 'set', 'up', name]
     return_val = subprocess.call(command)
     logging.info('IP command: %s executed.', command)
     return return_val

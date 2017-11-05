@@ -16,6 +16,8 @@ from vm import VMInstance, VMDisk, VMNetwork
 
 from vmcelery import celery, lib_connection, to_bool
 
+from netdriver import setup_user_network
+
 sys.path.append(os.path.dirname(os.path.basename(__file__)))
 
 vm_xml_dump = None
@@ -592,6 +594,8 @@ def attach_network(name, net):
     domain = lookupByName(name)
     net = VMNetwork.deserialize(net)
     logging.error(net.dump_xml())
+    if net.vxlan is not None:
+        setup_user_network(net)
     domain.attachDevice(net.dump_xml())
 
 
