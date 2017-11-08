@@ -1,6 +1,7 @@
 import lxml.etree as ET
 
 from vmcelery import native_ovs
+from netcelery import VXLAN_MTU
 
 
 # VM Instance class
@@ -322,7 +323,7 @@ class VMNetwork:
             ET.SubElement(xml_top, 'virtualport',
                           attrib={'type': self.virtual_port})
         if self.vxlan is not None:
-            ET.SubElement(xml_top, 'mtu', attrib={'size': '1450'})
+            ET.SubElement(xml_top, 'mtu', attrib={'size': VXLAN_MTU})
         ET.SubElement(xml_top, 'target', attrib={'dev': self.name})
         ET.SubElement(xml_top, 'mac', attrib={'address': self.mac})
         ET.SubElement(xml_top, 'model', attrib={'type': self.model})

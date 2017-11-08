@@ -171,6 +171,10 @@ def create(vm_desc):
 
     """
     vm = VMInstance.deserialize(vm_desc)
+    # Setup user networks
+    for net in vm.network_list:
+        if net.vxlan is not None:
+            setup_user_network(net)
     # Setting proper hypervisor
     vm.vm_type = os.getenv("HYPERVISOR_TYPE", "test")
     if vm.vm_type == "test":

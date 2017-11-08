@@ -32,6 +32,8 @@ if to_bool(getenv('LIBVIRT_KEEPALIVE', "False")):
 if to_bool(getenv('NATIVE_OVS', "False")):
     native_ovs = True
 
+VXLAN_MTU = getenv('VXLAN_MTU', '1450')
+
 celery = Celery('netcelery',
                 broker=AMQP_URI,
                 include=['netdriver'])

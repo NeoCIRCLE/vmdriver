@@ -6,6 +6,9 @@ from netcelery import celery
 from os import getenv
 from vm import VMNetwork
 from vmcelery import native_ovs
+from netcelery import VXLAN_MTU
+
+
 driver = getenv("HYPERVISOR_TYPE", "test")
 
 
@@ -236,13 +239,15 @@ def disable_all_not_allowed_trafic(network, port_number, remove=False):
         ofctl_command_execute(["del-flows", network.bridge, flow_cmd])
 
 
-def bridge_create(bridge_name):
+def bridge_create(bridge_name, mtu=None):
     """ Creates a bridge if it doesn't exist. """
     # Check bridge's existing
     if ovs_command_execute(["br-exists", bridge_name]) != 0:
         ovs_command_execute(["add-br", bridge_name])
         if pull_up_interface(bridge_name) != 0:
             raise InterfaceException("Cannot create bridge: %s!" % bridge_name)
+        if mtu is not None:
+            set_mtu(bridge_name, mtu)
 
 
 def create_vxlan_interface(name, vni, target_name):
@@ -268,8 +273,8 @@ def add_vxlan_gateway_to_bridge(src_bridge, vxlan, vlan, gw_bridge):
     GW is the base interface of XGW.
     Connects GW to the gw_bridge and XGW to the src_bridge.
     """
-    vlan_gw_name = "%s-gw" % src_bridge
-    vxlan_gw_name = "%s-xgw" % src_bridge
+    vlan_gw_name = "cloudgw-%s" % vlan
+    vxlan_gw_name = "cloudxgw-%s" % vxlan
     # Add port to gateway bridge with proper vlan tag
     ovs_command_execute(["add-port", gw_bridge, vlan_gw_name, "tag=%s" % vlan,
                          "--", "set", "Interface", vlan_gw_name,
@@ -289,7 +294,7 @@ def setup_user_network(network):
     """ Creates a bridge for user network and connect
     to the main bridge with a 802.1Q tagged VXLAN interface. """
     MAIN_BRIDGE = "cloud"
-    bridge_create(network.bridge)
+    bridge_create(network.bridge, VXLAN_MTU)
     add_vxlan_gateway_to_bridge(network.bridge, network.vxlan,
                                 network.vlan, MAIN_BRIDGE)
 
@@ -340,6 +345,8 @@ def port_create(network):
         # Explicit deny all other traffic
         disable_all_not_allowed_trafic(network, port_number)
     pull_up_interface(network.name)
+    if is_user_net:
+        set_mtu(network.name, VXLAN_MTU)
 
 
 def port_delete(network):
@@ -389,3 +396,11 @@ def get_fport_for_network(network):
     output = subprocess.check_output(
         ['sudo', 'ovs-vsctl', 'get', 'Interface', network.name, 'ofport'])
     return str(output).strip()
+
+
+def set_mtu(name, mtu):
+    """ Set MTU on the specified interface. """
+    command = ['sudo', 'ip', 'link', 'set', 'mtu', VXLAN_MTU, name]
+    return_val = subprocess.call(command)
+    logging.info('IP command: %s executed.', command)
+    return return_val
