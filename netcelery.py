@@ -22,6 +22,7 @@ AMQP_URI = getenv('AMQP_URI')
 def to_bool(value):
     return value.lower() in ("true", "yes", "y", "t")
 
+
 lib_connection = None
 native_ovs = False
 
