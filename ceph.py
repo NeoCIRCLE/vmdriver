@@ -72,11 +72,12 @@ def unmap_rbd(conf, local_path):
 
 
 def map_rbd(conf, ceph_path, local_path):
+    cmd = ["/usr/bin/rbd", "map", ceph_path, ] + conf.cmd_args()
     try:
-        sudo("/usr/bin/rbd", "map", ceph_path, *conf.cmd_args())
+        sudo(*cmd)
     except:
         unmap_rbd(conf, local_path)
-        sudo("/usr/bin/rbd", "map", ceph_path, *conf.cmd_args())
+        sudo(*cmd)
 
 
 def get_secret_key(conf):
@@ -117,7 +118,7 @@ def save(domain, poolname, diskname, ram_size, user):
     with CephConnection(poolname, user=user) as conn:
         rbd_inst = rbd.RBD()
         try:
-            rbd_inst.create(conn.ioctx, diskname, disk_size)
+            rbd_inst.create(conn.ioctx, diskname, disk_size, old_format=False)
         except rbd.ImageExists:
             rbd_inst.remove(conn.ioctx, diskname)
             rbd_inst.create(conn.ioctx, diskname, disk_size)
